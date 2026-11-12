@@ -6,6 +6,12 @@ requires-python = ">=3.13"
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P8D"
 
+[manifest]
+members = [
+    "rulegrid",
+    "rulegrid-editor",
+]
+
 [[package]]
 name = "annotated-types"
 version = "0.8.0"
@@ -476,6 +482,17 @@ dev = [
     { name = "pytest", specifier = ">=8.3" },
     { name = "ruff", specifier = ">=0.11" },
 ]
+
+[[package]]
+name = "rulegrid-editor"
+version = "0.1.0"
+source = { editable = "editor" }
+dependencies = [
+    { name = "rulegrid" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "rulegrid", editable = "." }]
 
 [[package]]
 name = "typing-extensions"

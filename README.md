@@ -130,8 +130,13 @@ rulegrid eval examples/three_laws/profiles/default --classifier judge:openai/gpt
 `eval` without `--data` runs the classifier on the policy's own examples, each labelled by where it sits: it checks
 that the policy's texts draw the lines its examples draw.
 
-The browser editor is being rebuilt as a separate package. It is not included in this port, and the core has no
-`serve` command or web dependencies.
+The [browser editor](editor/README.md) is a separate package, with vendored Preact + htm and no frontend build step:
+
+```bash
+uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor POLICY
+```
+
+The core has no `serve` command or web dependencies.
 
 ## Examples
 
@@ -148,11 +153,11 @@ Mallow's policy is maintained separately in
 ## Development
 
 ```bash
-uv sync --locked
+uv sync --locked --all-packages
 uv run pre-commit install
 uv run python scripts/refresh.py
 uv run pytest -q
-uv build
+uv build --all-packages
 ```
 
 CI checks Ruff lint and format, Pyright, the small contract suite, generated-file drift, and installed-wheel resources

@@ -44,15 +44,18 @@ target-version = "py313"
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "PIE", "RUF"]
 
 [tool.pyright]
-include = ["src", "tests", "examples", "scripts"]
+include = ["src", "tests", "examples", "scripts", "editor/src", "editor/tests"]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
 reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "editor/tests"]
 addopts = "--strict-markers --strict-config"
 filterwarnings = ["error"]
 
 [tool.uv]
 exclude-newer = "8 days"
+
+[tool.uv.workspace]
+members = ["editor"]

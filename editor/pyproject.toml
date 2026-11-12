@@ -1,0 +1,26 @@
+[project]
+name = "rulegrid-editor"
+version = "0.1.0"
+description = "Browse, edit and try a rulegrid policy in the browser."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Félix Martel" },
+    { name = "Grégoire Lothe", email = "51675587+glothe@users.noreply.github.com" },
+]
+requires-python = ">=3.13"
+dependencies = ["rulegrid @ git+https://github.com/the-marshmallow-project/rulegrid@31d62135db8f7fd5041ab4242dc27ba3612caf4e"]
+
+[project.scripts]
+rulegrid-editor = "rulegrid_editor:main"
+
+[tool.uv.sources]
+rulegrid = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true

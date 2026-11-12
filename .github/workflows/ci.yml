@@ -24,19 +24,26 @@ jobs:
           version: '0.13.5'
           python-version: ${{ matrix.python }}
           enable-cache: true
-      - run: uv sync --locked
+      - run: uv sync --locked --all-packages
       - run: uv run ruff check . && uv run ruff format --check .
       - run: uv run pyright
       - run: uv run pytest -q
+      - name: JavaScript parses without a build step
+        run: for file in editor/src/rulegrid_editor/static/*.js; do node --check "$file"; done
       - name: Generated files are current
         run: |
           uv run python scripts/refresh.py
           git diff --exit-code
           test -z "$(git ls-files --others --exclude-standard)"
-      - run: uv build
-      - name: Installed wheel includes usable examples
+      - run: uv build --all-packages
+      - name: Installed wheels include examples and editor assets
         run: |
-          uv run --isolated --no-project --with "$(realpath dist/*.whl)" python - <<'PY'
+          uv venv "$RUNNER_TEMP/wheels"
+          echo "rulegrid @ file://$(realpath dist/rulegrid-*.whl)" > "$RUNNER_TEMP/overrides.txt"
+          uv pip install --python "$RUNNER_TEMP/wheels/bin/python" --overrides "$RUNNER_TEMP/overrides.txt" dist/*.whl
+          "$RUNNER_TEMP/wheels/bin/rulegrid-editor" --help
+          "$RUNNER_TEMP/wheels/bin/python" - <<'PY'
+          from importlib.resources import files
           from pathlib import Path
           from tempfile import TemporaryDirectory
           import rulegrid as rg
@@ -48,4 +55,7 @@ jobs:
                   policy = rg.load(destination / 'profiles/default')
                   assert rg.check(policy) == []
                   assert rg.render(policy, 'document')
+          static = files('rulegrid_editor') / 'static'
+          for name in ('app.js', 'index.html', 'vendor/preact.js', 'vendor/htm.js', 'vendor/hooks.js', 'vendor/PREACT-LICENSE', 'vendor/HTM-LICENSE'):
+              assert (static / name).is_file(), name
           PY
