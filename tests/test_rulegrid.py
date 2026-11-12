@@ -1,5 +1,6 @@
 """The contract callers rely on, on the example policies. Kept minimal on purpose."""
 
+import gc
 import shutil
 from pathlib import Path
 
@@ -36,6 +37,17 @@ def robot(tmp_path: Path) -> rg.Policy:
 @pytest.mark.parametrize("path", [THREE_LAWS, RBR, EXAMPLES / "rbr/profiles/crisis_lines"])
 def test_examples_load_and_their_generated_files_are_up_to_date(path: Path) -> None:
     assert rg.check(rg.load(path)) == []
+
+
+def test_historical_policy_keeps_files_until_it_is_released() -> None:
+    policy = rg.load(THREE_LAWS, revision="HEAD")
+    archived_root = policy.root
+    assert archived_root != THREE_LAWS.parents[1]
+    assert rg.render(policy, "document")
+    assert archived_root.is_dir()
+    del policy
+    gc.collect()
+    assert not archived_root.exists()
 
 
 def test_first_applicable_tier_wins_and_turns_outside_every_condition_fall_through() -> None:
