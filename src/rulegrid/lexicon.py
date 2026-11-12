@@ -10,8 +10,9 @@ import functools
 import re
 import unicodedata
 from collections.abc import Sequence
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from rulegrid.types import Hit
 
@@ -19,17 +20,24 @@ from rulegrid.types import Hit
 class Entry(BaseModel):
     """A word or a phrase and its meaning.
 
-    It matches whole words, ignoring case, accents and the spacing or hyphenation between its words, and its plural in
-    -s or -x. `prefix` matches any ending. `languages` restricts it to conversations in those languages, for a word that
-    is innocent in another one.
+    It matches whole words, ignoring case, accents and spacing or hyphenation. `forms` lists additional spellings,
+    including inflections: the matcher adds none. `prefix` matches any ending. `languages` restricts an entry to
+    conversations in those languages, for a word that is innocent in another one.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     word: str
     meaning: str
+    forms: tuple[str, ...] = ()
     prefix: bool = False
     languages: tuple[str, ...] | None = None
+
+    @model_validator(mode="after")
+    def searchable(self) -> Self:
+        if any(not _fold(word).strip() for word in (self.word, *self.forms)):
+            raise ValueError("each word and form must contain a letter or digit")
+        return self
 
 
 class Lexicon(BaseModel):
@@ -54,7 +62,7 @@ def _fold(text: str) -> str:
 @functools.cache
 def _pattern(word: str, prefix: bool) -> re.Pattern[str]:
     words = _fold(word).split()
-    ending = r"\w*" if prefix else "(?:s|x)?"
+    ending = r"\w*" if prefix else ""
     return re.compile(r"(?<!\w)" + r"\s+".join(map(re.escape, words)) + ending + r"(?!\w)")
 
 
@@ -78,8 +86,9 @@ def match(
         for entry in lexicon.entries:
             if language is not None and entry.languages is not None and language not in entry.languages:
                 continue
-            for m in _pattern(entry.word, entry.prefix).finditer(folded):
-                found.append((m.start(), m.end(), Hit(text[m.start() : m.end()], entry, lexicon.reminds)))
+            for word in (entry.word, *entry.forms):
+                for m in _pattern(word, entry.prefix).finditer(folded):
+                    found.append((m.start(), m.end(), Hit(text[m.start() : m.end()], entry, lexicon.reminds)))
     found.sort(key=lambda f: f[0] - f[1])
     kept: list[tuple[int, int, Hit]] = []
     for f in found:

@@ -101,6 +101,9 @@ for assessment in await judge.assess(conversation):
 A threshold, keyed by tier id, asks the decision model whether that tier applies. Thresholds have no defaults: they
 belong to the model's calibration. Pass `decide=` instead of an endpoint to bring your own HTTP client.
 
+Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an
+entry's `forms` list; Rulegrid does not infer plurals. `prefix: true` opts into matching arbitrary endings.
+
 ## Command line
 
 ```text

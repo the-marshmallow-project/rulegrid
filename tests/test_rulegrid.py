@@ -89,11 +89,13 @@ def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(ro
 
 def test_lexicon_hits_remind_their_prohibition_in_the_nudge() -> None:
     p = rg.load(THREE_LAWS)
-    lexicon = rg.Lexicon(name="hazards", reminds="HARM_HUMAN", entries=(Entry(word="danger", meaning="a hazard"),))
-    hits = rg.match([lexicon], "Danger ahead")
-    assert [(h.text, h.reminds) for h in hits] == [("Danger", "HARM_HUMAN")]
+    lexicon = rg.Lexicon(
+        name="hazards", reminds="HARM_HUMAN", entries=(Entry(word="danger", meaning="a hazard", forms=("dangers",)),)
+    )
+    hits = rg.match([lexicon], "dangerx is unrelated; Dángers ahead, danger again")
+    assert [(h.text, h.reminds) for h in hits] == [("Dángers", "HARM_HUMAN")]
     nudge = rg.nudge(p, {"verb": "CHAT", "danger": "NONE"}, hits)
-    assert nudge is not None and "Danger" in nudge
+    assert nudge is not None and "Dángers" in nudge
     assert rg.nudge(p, {"verb": "CHAT", "danger": "NONE"}) is None
 
 
