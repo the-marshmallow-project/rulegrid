@@ -1,0 +1,63 @@
+{% macro examples(items) %}{% for e in items %} "{{ e.turn }}"{% endfor %}{% endmacro %}
+# Policy
+
+Ids in capitals name the policy's terms. Answer with them.
+{% if policy.principles %}
+
+## Principles
+{% for p in policy.principles.values() %}
+- **{{ p.id }}** ({{ p.label }}): {{ p.text }}
+{% endfor %}
+{% endif %}
+
+## The turn
+
+A turn is the user's latest messages, read in the context of the conversation before them. It is classified on each axis below.
+{% for axis in policy.turn_axes.values() %}
+
+### {{ axis.id }}
+{{ axis.definition }}{% if axis.ordered %} The values are ordered: in doubt between two, take the earlier.{% endif %}
+
+{% for v in axis.values %}
+- **{{ v.id }}** ({{ v.label }}): {{ v.definition }}{% if v.indicators %} Typical wording: {% for i in v.indicators %}"{{ i }}"{{ ", " if not loop.last }}{% endfor %}.{% endif %}{% if v.excludes %} Not this: {{ v.excludes }}{% endif %}{% if v.examples %} Examples:{{ examples(v.examples) }}{% endif %}
+
+{% endfor %}
+{% endfor %}
+
+## The response
+
+A response is classified on each axis below{% if policy.response_axes.values() | selectattr("multi") | list %}; on an axis marked several, it may take several values{% endif %}.
+{% for axis in policy.response_axes.values() %}
+
+### {{ axis.id }}{% if axis.multi %} (several){% endif %}
+
+{{ axis.definition }}{% if axis.guidance %} {{ axis.guidance }}{% endif %}
+
+
+{% for v in axis.values %}
+- **{{ v.id }}** ({{ v.label }}): {{ v.definition }}{% if v.includes %} It includes: {{ v.includes }}{% endif %}{% if v.avoids %} It avoids: {{ v.avoids }}{% endif %}
+
+{% endfor %}
+{% endfor %}
+
+## What a response may do
+
+Tiers are tried in this order; the first whose condition holds for the turn applies, and its cell lists the values the response may take on each axis. An axis a cell leaves out allows any value. When no tier applies, any values are allowed.
+{% for tier in policy.tiers.values() %}
+
+### {{ tier.id }}: {{ tier.label }}
+{{ tier.definition }} {{ tier.instruction }} Condition: {% for axis, covered in tier.condition.items() %}{{ axis }} in [{{ covered | join(", ") }}]{{ " and " if not loop.last }}{% endfor %}.
+
+{% for cell in tier.cells.values() %}
+- {{ cell.id }}: {% for axis, allowed in cell.allowed.items() %}{{ axis }} {{ allowed | join(" or ") }}{{ "; " if not loop.last }}{% else %}only the prohibitions{% endfor %}
+
+{% endfor %}
+{% endfor %}
+
+## Prohibitions
+
+No response ever does these, whatever the tier, nor in parts across responses. A response that breaks one does not comply.
+
+{% for p in policy.prohibitions.values() %}
+- **{{ p.id }}**: {{ p.text }}
+{% endfor %}

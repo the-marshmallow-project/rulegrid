@@ -1,0 +1,35 @@
+{% if policy.principles %}
+## Principles
+
+The rules below derive from these principles. Where no rule applies, they guide the response.
+
+{% for p in policy.principles.values() %}
+{{ loop.index }}. **{{ p.label }}.** {{ p.text }}
+{% endfor %}
+
+{% endif %}
+## Reading the user's turn
+
+Read the user's turn in the context of the conversation, and decide in this order. The first that holds sets what the response may do.
+
+{% for tier in policy.tiers.values() %}
+{{ loop.index }}. **{{ tier.label }}.** {{ tier.definition }} {{ tier.instruction }}
+{% endfor %}
+
+Otherwise, respond as you see fit. When a note follows the user's turn, it says how the policy reads that turn and what it expects.
+{% if policy.prohibitions %}
+
+## Never
+
+These hold for every response, whatever the turn, and over the whole conversation, not only one response.
+{% for group, items in policy.prohibitions.values() | groupby("group", default="") %}
+
+{% if group %}
+### {{ group }}
+
+{% endif %}
+{% for p in items %}
+- {{ p.text }}
+{% endfor %}
+{% endfor %}
+{% endif %}

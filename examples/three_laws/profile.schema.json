@@ -1,0 +1,496 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "rulegrid profile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "structure": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string",
+      "description": "Who the agent is and who it talks to."
+    },
+    "principles": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/PrincipleFile"
+      }
+    },
+    "turn_axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "verb": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ORDER": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "CHAT": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "ORDER",
+                "CHAT"
+              ]
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        },
+        "danger": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "HUMAN": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "ROBOT": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "NONE": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "HUMAN",
+                "ROBOT",
+                "NONE"
+              ]
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        }
+      },
+      "required": [
+        "verb",
+        "danger"
+      ]
+    },
+    "response_axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "PROTECT": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "OBEY": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "PRESERVE": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "ANSWER": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "PROTECT",
+                "OBEY",
+                "PRESERVE",
+                "ANSWER"
+              ]
+            },
+            "guidance": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        }
+      },
+      "required": [
+        "handling"
+      ]
+    },
+    "tiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "first_law": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "definition": {
+              "type": "string"
+            },
+            "instruction": {
+              "type": "string"
+            },
+            "cells": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "HUMAN": {
+                  "$ref": "#/$defs/Cell"
+                }
+              },
+              "required": [
+                "HUMAN"
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "definition",
+            "instruction",
+            "cells"
+          ]
+        },
+        "second_law": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "definition": {
+              "type": "string"
+            },
+            "instruction": {
+              "type": "string"
+            },
+            "cells": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ORDER": {
+                  "$ref": "#/$defs/Cell"
+                }
+              },
+              "required": [
+                "ORDER"
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "definition",
+            "instruction",
+            "cells"
+          ]
+        },
+        "third_law": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "definition": {
+              "type": "string"
+            },
+            "instruction": {
+              "type": "string"
+            },
+            "cells": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ROBOT": {
+                  "$ref": "#/$defs/Cell"
+                }
+              },
+              "required": [
+                "ROBOT"
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "definition",
+            "instruction",
+            "cells"
+          ]
+        }
+      },
+      "required": [
+        "first_law",
+        "second_law",
+        "third_law"
+      ]
+    },
+    "prohibitions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ProhibitionFile"
+      }
+    }
+  },
+  "required": [
+    "turn_axes",
+    "response_axes",
+    "tiers"
+  ],
+  "$defs": {
+    "ExampleFile": {
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MessageFile"
+          },
+          "title": "Context",
+          "type": "array"
+        },
+        "turn": {
+          "title": "Turn",
+          "type": "string"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        }
+      },
+      "required": [
+        "turn"
+      ],
+      "title": "ExampleFile",
+      "type": "object"
+    },
+    "MessageFile": {
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "title": "MessageFile",
+      "type": "object"
+    },
+    "PrincipleFile": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "text"
+      ],
+      "title": "PrincipleFile",
+      "type": "object"
+    },
+    "ProhibitionFile": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
+        "valid": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          },
+          "title": "Valid",
+          "type": "array"
+        },
+        "invalid": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          },
+          "title": "Invalid",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "ProhibitionFile",
+      "type": "object"
+    },
+    "ValueFile": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "definition": {
+          "title": "Definition",
+          "type": "string"
+        },
+        "indicators": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Indicators",
+          "type": "array"
+        },
+        "excludes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excludes"
+        },
+        "includes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Includes"
+        },
+        "avoids": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avoids"
+        },
+        "default": {
+          "type": "boolean",
+          "default": false,
+          "title": "Default"
+        },
+        "examples": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          },
+          "title": "Examples",
+          "type": "array"
+        }
+      },
+      "required": [
+        "label",
+        "definition"
+      ],
+      "title": "ValueFile",
+      "type": "object"
+    },
+    "Cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handling": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "PROTECT",
+              "OBEY",
+              "PRESERVE",
+              "ANSWER"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          }
+        }
+      }
+    }
+  }
+}

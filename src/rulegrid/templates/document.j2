@@ -1,0 +1,111 @@
+{% macro exchange(e) %}{% for m in e.context %}**{{ "User" if m.role == "user" else "Agent" }}:** *{{ m.content | cell }}*<br>{% endfor %}**User:** *{{ e.turn | cell }}*{% if e.response is not none %}<br>**Agent:** *{{ e.response | cell }}*{% endif %}{% endmacro %}
+{% macro allowed(cell) %}{% for axis, values in cell.allowed.items() %}{% for v in values %}{{ policy.response_axes[axis].value(v).label }}{{ " or " if not loop.last }}{% endfor %}{{ " · " if not loop.last }}{% else %}any{% endfor %}{% endmacro %}
+# {{ policy.root.name }} · {{ policy.name }}
+{% if note | default(true) %}
+
+*Generated from `profiles/{{ policy.name }}/profile.yaml` by `rulegrid render`: edit the YAML, not this page.*
+{% endif %}
+{% if policy.context %}
+
+{{ policy.context }}
+{% endif %}
+{% if policy.principles %}
+
+## Principles
+
+{% for p in policy.principles.values() %}
+{{ loop.index }}. **{{ p.label }}.** {{ p.text }}
+{% endfor %}
+{% endif %}
+
+## Priority
+
+At each turn, the response is set in this order. The prohibitions hold for every response.
+
+{% for tier in policy.tiers.values() %}
+{{ loop.index }}. **{{ tier.label }}.** {{ tier.definition }} {{ tier.instruction }}
+{% endfor %}
+
+When no tier applies, only the prohibitions constrain the response.
+
+## The turn
+{% for axis in policy.turn_axes.values() %}
+
+### {{ axis.id | replace("_", " ") | ucfirst }}
+
+{{ axis.definition }}
+
+| Value | Definition | Typical wording | Not this |
+|---|---|---|---|
+{% for v in axis.values %}
+| **{{ v.label }}** ({{ v.id }}) | {{ v.definition | cell }} | {{ v.indicators | join(", ") | cell }} | {{ (v.excludes or "") | cell }} |
+{% endfor %}
+{% endfor %}
+
+## The response
+{% for axis in policy.response_axes.values() %}
+
+### {{ axis.id | replace("_", " ") | ucfirst }}
+
+{{ axis.definition }}{% if axis.guidance %} {{ axis.guidance }}{% endif %}
+
+
+| Value | Definition | Includes | Avoids |
+|---|---|---|---|
+{% for v in axis.values %}
+| **{{ v.label }}** ({{ v.id }}){{ " · default" if v.default }} | {{ v.definition | cell }} | {{ (v.includes or "") | cell }} | {{ (v.avoids or "") | cell }} |
+{% endfor %}
+{% endfor %}
+{% for tier in policy.tiers.values() %}
+{% set keys = tier.condition | list %}
+
+## {{ tier.label }}
+
+{{ tier.definition }} {{ tier.instruction }} Each cell lists the allowed values as {{ policy.response_axes | list | join(" · ") }}.
+
+{% if keys | length == 2 %}
+| | {% for c in tier.condition[keys[1]] %}{{ c }} | {% endfor %}
+
+|---|{% for c in tier.condition[keys[1]] %}---|{% endfor %}
+
+{% for r in tier.condition[keys[0]] %}
+| **{{ policy.turn_axes[keys[0]].value(r).label }}** | {% for c in tier.condition[keys[1]] %}{{ allowed(tier.cells[(r, c)]) }} | {% endfor %}
+
+{% endfor %}
+{% else %}
+| Cell | Allowed |
+|---|---|
+{% for cell in tier.cells.values() %}
+| {{ cell.id }} | {{ allowed(cell) }} |
+{% endfor %}
+{% endif %}
+{% set shown = tier.cells.values() | selectattr("examples") | list %}
+{% if shown %}
+
+| Cell | Compliant exchange |
+|---|---|
+{% for cell in shown %}
+{% for e in cell.examples %}
+| {{ cell.id }} | {{ exchange(e) }} |
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% if policy.prohibitions %}
+
+## Prohibitions
+
+No response ever does these, whatever the tier.
+
+| Prohibition | Exchange | Complies |
+|---|---|---|
+{% for p in policy.prohibitions.values() %}
+| **{{ p.id }}**: {{ p.text | cell }} | | |
+{% for e in p.valid %}
+| {{ p.id }} | {{ exchange(e) }} | yes |
+{% endfor %}
+{% for e in p.invalid %}
+| {{ p.id }} | {{ exchange(e) }} | **no** |
+{% endfor %}
+{% endfor %}
+{% endif %}

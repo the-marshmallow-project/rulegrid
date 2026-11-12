@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AxisSpec": {
+      "additionalProperties": false,
+      "description": "An axis in the structure: its value ids, in order. `ordered`: the order carries meaning, and a doubt between two\nvalues settles on the earlier. `multi`: a response may take several values at once.",
+      "properties": {
+        "values": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "ordered": {
+          "default": false,
+          "title": "Ordered",
+          "type": "boolean"
+        },
+        "multi": {
+          "default": false,
+          "title": "Multi",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "values"
+      ],
+      "title": "AxisSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "`structure.yaml`: the turn and response axes, and the tiers in priority order, each with its condition: for each\nturn axis it is keyed on, the values it covers, or `\"*\"` for all.",
+  "properties": {
+    "turn_axes": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "$ref": "#/$defs/AxisSpec"
+          }
+        ]
+      },
+      "title": "Turn Axes",
+      "type": "object"
+    },
+    "response_axes": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "$ref": "#/$defs/AxisSpec"
+          }
+        ]
+      },
+      "title": "Response Axes",
+      "type": "object"
+    },
+    "tiers": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "const": "*",
+              "type": "string"
+            }
+          ]
+        },
+        "type": "object"
+      },
+      "title": "Tiers",
+      "type": "object"
+    }
+  },
+  "required": [
+    "turn_axes",
+    "response_axes",
+    "tiers"
+  ],
+  "title": "StructureFile",
+  "type": "object"
+}

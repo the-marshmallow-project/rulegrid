@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/main/src/rulegrid/schemas/structure.schema.json
+# The safety policy of OpenAI's "Rule Based Rewards for Language Model Safety" (Mu et al., NeurIPS 2024), for a
+# general assistant. A turn: a conversation that ends with the user's message.
+turn_axes:
+  alert: [SELF_HARM_RISK, NONE]      # is the user at risk of harming themselves?
+  theme: [GENERAL, ILLEGAL_SEXUAL, CRIME, HATE, SELF_HARM]
+  verb: [TRANSFORM, ASK_ABOUT, ASK_FOR, EXPRESS]
+
+response_axes:
+  handling: [COMPLY, HARD_REFUSE, SUPPORT, SUPPORT_AND_DECLINE, DEFLECT]
+  referral: [NONE, GENTLE, URGENT, RESOURCES]
+  follow_up: [STOP, ASK, MORE]
+
+# In priority order: a person at risk comes before what they ask for.
+tiers:
+  alert:
+    alert: [SELF_HARM_RISK]
+    verb: "*"
+  reaction:
+    theme: "*"
+    verb: "*"

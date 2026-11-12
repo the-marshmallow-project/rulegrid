@@ -1,0 +1,758 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "rulegrid profile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "structure": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string",
+      "description": "Who the agent is and who it talks to."
+    },
+    "principles": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/PrincipleFile"
+      }
+    },
+    "turn_axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "alert": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "SELF_HARM_RISK": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "NONE": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "SELF_HARM_RISK",
+                "NONE"
+              ]
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        },
+        "theme": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "GENERAL": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "ILLEGAL_SEXUAL": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "CRIME": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "HATE": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "SELF_HARM": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "GENERAL",
+                "ILLEGAL_SEXUAL",
+                "CRIME",
+                "HATE",
+                "SELF_HARM"
+              ]
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        },
+        "verb": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "TRANSFORM": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "ASK_ABOUT": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "ASK_FOR": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "EXPRESS": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "TRANSFORM",
+                "ASK_ABOUT",
+                "ASK_FOR",
+                "EXPRESS"
+              ]
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        }
+      },
+      "required": [
+        "alert",
+        "theme",
+        "verb"
+      ]
+    },
+    "response_axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "COMPLY": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "HARD_REFUSE": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "SUPPORT": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "SUPPORT_AND_DECLINE": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "DEFLECT": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "COMPLY",
+                "HARD_REFUSE",
+                "SUPPORT",
+                "SUPPORT_AND_DECLINE",
+                "DEFLECT"
+              ]
+            },
+            "guidance": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        },
+        "referral": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "NONE": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "GENTLE": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "URGENT": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "RESOURCES": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "NONE",
+                "GENTLE",
+                "URGENT",
+                "RESOURCES"
+              ]
+            },
+            "guidance": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        },
+        "follow_up": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "STOP": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "ASK": {
+                  "$ref": "#/$defs/ValueFile"
+                },
+                "MORE": {
+                  "$ref": "#/$defs/ValueFile"
+                }
+              },
+              "required": [
+                "STOP",
+                "ASK",
+                "MORE"
+              ]
+            },
+            "guidance": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "definition",
+            "values"
+          ]
+        }
+      },
+      "required": [
+        "handling",
+        "referral",
+        "follow_up"
+      ]
+    },
+    "tiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "alert": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "definition": {
+              "type": "string"
+            },
+            "instruction": {
+              "type": "string"
+            },
+            "cells": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "SELF_HARM_RISK": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "TRANSFORM": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_ABOUT": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_FOR": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "EXPRESS": {
+                      "$ref": "#/$defs/Cell"
+                    }
+                  },
+                  "required": [
+                    "TRANSFORM",
+                    "ASK_ABOUT",
+                    "ASK_FOR",
+                    "EXPRESS"
+                  ]
+                }
+              },
+              "required": [
+                "SELF_HARM_RISK"
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "definition",
+            "instruction",
+            "cells"
+          ]
+        },
+        "reaction": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "definition": {
+              "type": "string"
+            },
+            "instruction": {
+              "type": "string"
+            },
+            "cells": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "GENERAL": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "TRANSFORM": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_ABOUT": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_FOR": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "EXPRESS": {
+                      "$ref": "#/$defs/Cell"
+                    }
+                  },
+                  "required": [
+                    "TRANSFORM",
+                    "ASK_ABOUT",
+                    "ASK_FOR",
+                    "EXPRESS"
+                  ]
+                },
+                "ILLEGAL_SEXUAL": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "TRANSFORM": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_ABOUT": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_FOR": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "EXPRESS": {
+                      "$ref": "#/$defs/Cell"
+                    }
+                  },
+                  "required": [
+                    "TRANSFORM",
+                    "ASK_ABOUT",
+                    "ASK_FOR",
+                    "EXPRESS"
+                  ]
+                },
+                "CRIME": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "TRANSFORM": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_ABOUT": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_FOR": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "EXPRESS": {
+                      "$ref": "#/$defs/Cell"
+                    }
+                  },
+                  "required": [
+                    "TRANSFORM",
+                    "ASK_ABOUT",
+                    "ASK_FOR",
+                    "EXPRESS"
+                  ]
+                },
+                "HATE": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "TRANSFORM": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_ABOUT": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_FOR": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "EXPRESS": {
+                      "$ref": "#/$defs/Cell"
+                    }
+                  },
+                  "required": [
+                    "TRANSFORM",
+                    "ASK_ABOUT",
+                    "ASK_FOR",
+                    "EXPRESS"
+                  ]
+                },
+                "SELF_HARM": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "TRANSFORM": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_ABOUT": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "ASK_FOR": {
+                      "$ref": "#/$defs/Cell"
+                    },
+                    "EXPRESS": {
+                      "$ref": "#/$defs/Cell"
+                    }
+                  },
+                  "required": [
+                    "TRANSFORM",
+                    "ASK_ABOUT",
+                    "ASK_FOR",
+                    "EXPRESS"
+                  ]
+                }
+              },
+              "required": [
+                "GENERAL",
+                "ILLEGAL_SEXUAL",
+                "CRIME",
+                "HATE",
+                "SELF_HARM"
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "definition",
+            "instruction",
+            "cells"
+          ]
+        }
+      },
+      "required": [
+        "alert",
+        "reaction"
+      ]
+    },
+    "prohibitions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ProhibitionFile"
+      }
+    }
+  },
+  "required": [
+    "turn_axes",
+    "response_axes",
+    "tiers"
+  ],
+  "$defs": {
+    "ExampleFile": {
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MessageFile"
+          },
+          "title": "Context",
+          "type": "array"
+        },
+        "turn": {
+          "title": "Turn",
+          "type": "string"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        }
+      },
+      "required": [
+        "turn"
+      ],
+      "title": "ExampleFile",
+      "type": "object"
+    },
+    "MessageFile": {
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "title": "MessageFile",
+      "type": "object"
+    },
+    "PrincipleFile": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "text"
+      ],
+      "title": "PrincipleFile",
+      "type": "object"
+    },
+    "ProhibitionFile": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
+        "valid": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          },
+          "title": "Valid",
+          "type": "array"
+        },
+        "invalid": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          },
+          "title": "Invalid",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "ProhibitionFile",
+      "type": "object"
+    },
+    "ValueFile": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "definition": {
+          "title": "Definition",
+          "type": "string"
+        },
+        "indicators": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Indicators",
+          "type": "array"
+        },
+        "excludes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excludes"
+        },
+        "includes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Includes"
+        },
+        "avoids": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avoids"
+        },
+        "default": {
+          "type": "boolean",
+          "default": false,
+          "title": "Default"
+        },
+        "examples": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          },
+          "title": "Examples",
+          "type": "array"
+        }
+      },
+      "required": [
+        "label",
+        "definition"
+      ],
+      "title": "ValueFile",
+      "type": "object"
+    },
+    "Cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handling": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "COMPLY",
+              "HARD_REFUSE",
+              "SUPPORT",
+              "SUPPORT_AND_DECLINE",
+              "DEFLECT"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "referral": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "NONE",
+              "GENTLE",
+              "URGENT",
+              "RESOURCES"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "follow_up": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "STOP",
+              "ASK",
+              "MORE"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExampleFile"
+          }
+        }
+      }
+    }
+  }
+}
