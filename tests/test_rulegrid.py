@@ -144,6 +144,11 @@ def test_diff_labels_a_loosened_cell(tmp_path: Path) -> None:
     profile.write_text(profile.read_text().replace("handling: [OBEY]", "handling: [OBEY, ANSWER]"))
     changes = rg.diff(rg.load(THREE_LAWS), rg.load(profile.parent)).changes
     assert [(c.kind, c.id, c.change) for c in changes] == [("cell", "second_law/ORDER", "loosened")]
+    before = rg.load(profile.parent)
+    profile.write_text(profile.read_text().replace("context:", "context: Now in a hospital."))
+    changes = rg.diff(before, rg.load(profile.parent))
+    assert [(c.kind, c.change) for c in changes.changes] == [("context", "changed")]
+    assert changes.prescriptions == ()
 
 
 def test_init_copies_a_toy_policy_that_checks(tmp_path: Path) -> None:

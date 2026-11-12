@@ -163,7 +163,7 @@ class Change:
     cell whose allowed values shrink is `tightened`, one whose allowed values grow `loosened`.
     """
 
-    kind: Literal["structure", "principle", "axis", "value", "tier", "cell", "prohibition", "lexicon"]
+    kind: Literal["structure", "context", "principle", "axis", "value", "tier", "cell", "prohibition", "lexicon"]
     id: str
     change: Literal["added", "removed", "changed", "tightened", "loosened", "mixed"]
 

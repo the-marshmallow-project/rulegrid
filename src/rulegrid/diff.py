@@ -40,6 +40,8 @@ def diff(old: Policy, new: Policy) -> PolicyDiff:
     changes: list[Change] = []
     if old.structure_digest != new.structure_digest:
         changes.append(Change("structure", "structure.yaml", "changed"))
+    if old.context != new.context:
+        changes.append(Change("context", "context", "changed"))
     changes += _compare("principle", old.principles, new.principles)
     for side in ("turn_axes", "response_axes"):
         a, b = getattr(old, side), getattr(new, side)
