@@ -1,0 +1,25 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run --locked ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Ruff format
+        entry: uv run --locked ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: generate
+        name: Regenerate schemas and types
+        entry: uv run --locked python scripts/refresh.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pyright
+        name: Pyright
+        entry: uv run --locked pyright
+        language: system
+        pass_filenames: false
+        always_run: true

@@ -1,0 +1,51 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.13', '3.14']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.13.5'
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pyright
+      - run: uv run pytest -q
+      - name: Generated files are current
+        run: |
+          uv run python scripts/refresh.py
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+      - run: uv build
+      - name: Installed wheel includes usable examples
+        run: |
+          uv run --isolated --no-project --with "$(realpath dist/*.whl)" python - <<'PY'
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+          import rulegrid as rg
+          from rulegrid.cli import main
+          with TemporaryDirectory() as directory:
+              for example in ('three_laws', 'rbr'):
+                  destination = Path(directory) / example
+                  assert main(['init', str(destination), '--from', example]) == 0
+                  policy = rg.load(destination / 'profiles/default')
+                  assert rg.check(policy) == []
+                  assert rg.render(policy, 'document')
+          PY
