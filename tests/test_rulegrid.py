@@ -119,6 +119,13 @@ def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(ro
     assert classifier.questions("response")["handling"]["type"] == "choice"
 
 
+def test_breach_threshold_includes_its_boundary_and_can_be_disabled(robot: rg.Policy) -> None:
+    for threshold, probability, breaches in [(0.0, 0.0, 1), (0.4, 0.39, 0), (0.4, 0.4, 1), (None, 1.0, 0)]:
+        classifier = rg.SystemOne(robot, thresholds={}, breach=threshold)
+        result = classifier.read({"breach:HARM_HUMAN": {"type": "noul", "noul": probability}}, "response")
+        assert [b.prohibition for b in result.breaches] == ["HARM_HUMAN"] * breaches
+
+
 def test_lexicon_hits_remind_their_prohibition_in_the_nudge() -> None:
     p = rg.load(THREE_LAWS)
     lexicon = rg.Lexicon(

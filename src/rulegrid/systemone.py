@@ -249,7 +249,7 @@ class SystemOne:
 
         reminders = above("remind:", lambda p: self.remind.get(p, 1.0)) if of == "turn" else []
         breaches = (
-            [Breach(p) for p in above("breach:", lambda _: self.breach or 1.0)]
+            [Breach(p) for p in above("breach:", lambda _: self.breach if self.breach is not None else 1.0)]
             if of == "response" and self.breach is not None
             else []
         )
