@@ -7,16 +7,17 @@
 from __future__ import annotations
 
 import hashlib
+import keyword
 import subprocess
 import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
-from typing import Any, Generic, Literal, TypeVar
+from typing import Annotated, Any, Generic, Literal, Self, TypeVar
 
 import yamlrocks
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
 from rulegrid.lexicon import Lexicon
 from rulegrid.types import Message, Problem, Values
@@ -31,12 +32,15 @@ class _File(BaseModel):
 
 # --- structure.yaml
 
+type AxisID = Annotated[str, Field(pattern=r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")]
+type ValueIDs = Annotated[list[str], Field(min_length=1)]
+
 
 class AxisSpec(_File):
     """An axis in the structure: its value ids, in order. `ordered`: the order carries meaning, and a doubt between two
     values settles on the earlier. `multi`: a response may take several values at once."""
 
-    values: list[str]
+    values: ValueIDs
     ordered: bool = False
     multi: bool = False
 
@@ -45,9 +49,23 @@ class StructureFile(_File):
     """`structure.yaml`: the turn and response axes, and the tiers in priority order, each with its condition: for each
     turn axis it is keyed on, the values it covers, or `"*"` for all."""
 
-    turn_axes: dict[str, list[str] | AxisSpec]
-    response_axes: dict[str, list[str] | AxisSpec]
-    tiers: dict[str, dict[str, list[str] | Literal["*"]]]
+    turn_axes: dict[AxisID, ValueIDs | AxisSpec]
+    response_axes: dict[AxisID, ValueIDs | AxisSpec]
+    tiers: dict[str, dict[AxisID, ValueIDs | Literal["*"]]]
+
+    @model_validator(mode="after")
+    def distinct_axes(self) -> Self:
+        if self.turn_axes.keys() & self.response_axes.keys():
+            raise ValueError("turn and response axis identifiers must be distinct")
+        names = {"Collection", "Literal", "Path", "TypedDict", "TurnValues", "ResponseValues"}
+        for axis in (*self.turn_axes, *self.response_axes):
+            if keyword.iskeyword(axis) or axis in {"evidence", "concerns", "examples"}:
+                raise ValueError(f"reserved axis identifier {axis}")
+            name = "".join(part.capitalize() for part in axis.split("_"))
+            if name in names:
+                raise ValueError(f"axis identifier {axis} conflicts with generated type {name}")
+            names.add(name)
+        return self
 
 
 # --- profile.yaml
@@ -391,12 +409,15 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
     lexicon_bytes = []
     for lexicon_path in sorted((profile_dir / "lexicons").glob("*.yaml")):
         where = f"lexicons/{lexicon_path.name}"
-        lexicon_bytes.append(lexicon_path.read_bytes())
         try:
+            lexicon_bytes.append(lexicon_path.read_bytes())
             raw = LexiconFile.model_validate(_read(lexicon_path))
             lexicon = Lexicon.model_validate({"name": lexicon_path.stem, **raw.model_dump()})
         except ValidationError as e:
             problems += _validation(where, e)
+            continue
+        except (OSError, yamlrocks.YAMLRocksError) as e:
+            problems.append(Problem(where, str(e)))
             continue
         if lexicon.reminds not in prohibitions:
             problems.append(Problem(where, f"reminds an unknown prohibition {lexicon.reminds}"))
@@ -454,8 +475,6 @@ def _cell(
     node: Any,
     response_axes: Mapping[str, Axis],
 ) -> Cell:
-    if node is None:
-        node = {}
     if not isinstance(node, dict):
         problems.append(Problem(where, "a cell is a mapping of response axes to allowed values, `{}` for none"))
         node = {}
@@ -464,7 +483,7 @@ def _cell(
     for key, values in node.items():
         if key == "examples":
             try:
-                examples = tuple(_example(ExampleFile.model_validate(e)) for e in values)
+                examples = tuple(map(_example, TypeAdapter(list[ExampleFile]).validate_python(values)))
             except ValidationError as e:
                 problems += _validation(f"{where}.examples", e)
             continue
@@ -472,7 +491,7 @@ def _cell(
         if axis is None:
             problems.append(Problem(where, f"unknown response axis {key}"))
             continue
-        if not isinstance(values, list) or not values:
+        if not isinstance(values, list) or not values or any(not isinstance(v, str) for v in values):
             problems.append(Problem(f"{where}.{key}", "list at least one allowed value"))
             continue
         for v in values:

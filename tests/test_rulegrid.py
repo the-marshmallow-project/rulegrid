@@ -60,12 +60,32 @@ def test_comply_cites_the_cell_and_the_prohibition(robot: rg.Policy) -> None:
     assert rg.comply(robot, {"verb": "CHAT", "danger": "NONE"}, {"handling": ["ANSWER"]})
 
 
-def test_a_missing_cell_does_not_load(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "replacement",
+    ["{}", "ORDER: null", "ORDER: {examples: null}", "ORDER: {handling: [{bad: value}]}"],
+)
+def test_malformed_cells_do_not_load(tmp_path: Path, replacement: str) -> None:
     shutil.copytree(EXAMPLES / "three_laws", tmp_path / "p")
     profile = tmp_path / "p/profiles/default/profile.yaml"
-    profile.write_text(profile.read_text().replace("ORDER: {handling: [OBEY]}", "{}"))
-    with pytest.raises(PolicyError, match="missing cell ORDER"):
+    profile.write_text(profile.read_text().replace("ORDER: {handling: [OBEY]}", replacement))
+    with pytest.raises(PolicyError, match=r"tiers\.second_law\.cells"):
         rg.load(profile.parent)
+
+
+def test_invalid_structure_and_lexicon_report_policy_errors(tmp_path: Path) -> None:
+    shutil.copytree(EXAMPLES / "three_laws", tmp_path / "p")
+    root = tmp_path / "p"
+    structure = root / "structure.yaml"
+    original = structure.read_text()
+    structure.write_text(original.replace("verb:", "not-valid:"))
+    with pytest.raises(PolicyError, match=r"structure\.yaml"):
+        rg.load(root / "profiles/default")
+    structure.write_text(original)
+    lexicons = root / "profiles/default/lexicons"
+    lexicons.mkdir()
+    (lexicons / "hazards.yaml").write_text("reminds: HARM_HUMAN\nreminds: HARM_HUMAN\nentries: []\n")
+    with pytest.raises(PolicyError, match=r"lexicons/hazards\.yaml"):
+        rg.load(root / "profiles/default")
 
 
 def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(robot: rg.Policy) -> None:

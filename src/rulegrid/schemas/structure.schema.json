@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
+    "AxisID": {
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+      "type": "string"
+    },
     "AxisSpec": {
       "additionalProperties": false,
       "description": "An axis in the structure: its value ids, in order. `ordered`: the order carries meaning, and a doubt between two\nvalues settles on the earlier. `multi`: a response may take several values at once.",
       "properties": {
         "values": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Values",
-          "type": "array"
+          "$ref": "#/$defs/ValueIDs"
         },
         "ordered": {
           "default": false,
@@ -28,6 +28,13 @@
       ],
       "title": "AxisSpec",
       "type": "object"
+    },
+    "ValueIDs": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
     }
   },
   "additionalProperties": false,
@@ -37,15 +44,15 @@
       "additionalProperties": {
         "anyOf": [
           {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
+            "$ref": "#/$defs/ValueIDs"
           },
           {
             "$ref": "#/$defs/AxisSpec"
           }
         ]
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AxisID"
       },
       "title": "Turn Axes",
       "type": "object"
@@ -54,15 +61,15 @@
       "additionalProperties": {
         "anyOf": [
           {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
+            "$ref": "#/$defs/ValueIDs"
           },
           {
             "$ref": "#/$defs/AxisSpec"
           }
         ]
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AxisID"
       },
       "title": "Response Axes",
       "type": "object"
@@ -72,16 +79,16 @@
         "additionalProperties": {
           "anyOf": [
             {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
+              "$ref": "#/$defs/ValueIDs"
             },
             {
               "const": "*",
               "type": "string"
             }
           ]
+        },
+        "propertyNames": {
+          "$ref": "#/$defs/AxisID"
         },
         "type": "object"
       },

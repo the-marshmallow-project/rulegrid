@@ -120,6 +120,8 @@ def types_module(policy: Policy) -> str:
         lines.append(f"{_camel(axis.id)} = Literal[{', '.join(json.dumps(v) for v in axis.ids)}]")
     for name, axes in (("TurnValues", policy.turn_axes), ("ResponseValues", policy.response_axes)):
         lines += ["", "", f"class {name}(TypedDict):"]
+        if not axes:
+            lines.append("    pass")
         for axis in axes.values():
             kind = f"Collection[{_camel(axis.id)}]" if axis.multi else _camel(axis.id)
             lines.append(f"    {axis.id}: {kind}")
