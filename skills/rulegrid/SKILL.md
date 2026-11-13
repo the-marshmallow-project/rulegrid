@@ -16,7 +16,7 @@ Rulegrid's terms, used below: a **turn** (the user's message) is classified on *
 order, map a turn's position to a **cell**, which lists the values a **response** may take on each **response axis**;
 **prohibitions** hold everywhere; **principles** justify the rules. The
 [README](https://github.com/the-marshmallow-project/rulegrid#readme) has the full picture, and the
-[glossary](https://github.com/the-marshmallow-project/rulegrid/blob/main/GLOSSARY.md) defines every term.
+[glossary](https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.0/GLOSSARY.md) defines every term.
 
 ## 1. Set up
 
@@ -162,7 +162,7 @@ of two things:
 When the dataset has responses, write both: `dataset.jsonl` labelled, and `audit.jsonl` with the same rows minus
 their response labels. `eval` refuses a row with any other key, and a dataset whose labels name an id the policy
 doesn't define, which it lists before calling any model. From Python, `rulegrid.Dataset(rows).save(path)` writes the same file from `rulegrid.types.Row`s;
-[`examples/rbr/gold.py`](https://github.com/the-marshmallow-project/rulegrid/blob/main/examples/rbr/gold.py) is a
+[`examples/rbr/gold.py`](https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.0/examples/rbr/gold.py) is a
 complete adapter.
 
 **Evaluate** with a classifier. The built-in judge works with any OpenAI-compatible endpoint:
