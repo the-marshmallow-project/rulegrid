@@ -1,19 +1,23 @@
 {% macro value(v) %}{{ v.definition }}{% if v.includes %} It includes {{ v.includes | lcfirst }}{% endif %}{% if v.avoids %} It avoids {{ v.avoids | lcfirst }}{% endif %}{% endmacro %}
+{% macro axis_name(axis) %}{{ axis.id | replace("_", " ") }}{% endmacro %}
 {% if tier %}
-Note: the policy reads the user's last message as {{ tier.label | lower }} ({% for axis, v in cell.position.items() %}{{ policy.turn_axes[axis].value(v).label | lcfirst }}{{ ", " if not loop.last }}{% endfor %}). It can be wrong: you decide. If it is right: {{ tier.instruction }}
+Note: the policy places the user's last message under {{ tier.label }} ({% for axis, v in cell.position.items() %}{{ axis_name(policy.turn_axes[axis]) }}: {{ policy.turn_axes[axis].value(v).label | lcfirst }}{{ "; " if not loop.last }}{% endfor %}). It can be wrong: you decide. If it is right, {{ tier.instruction | lcfirst }}
+
+What the response may do:
 {% for axis, values in allowed.items() %}
 {% if values | length == 1 %}
-- {{ axis.id | replace("_", " ") | ucfirst }}, {{ values[0].label | lower }}: {{ value(values[0]) }}
+- {{ axis_name(axis) | ucfirst }}: {{ values[0].label | ucfirst }}. {{ value(values[0]) }}
 {% else %}
-- {{ axis.id | replace("_", " ") | ucfirst }}, {{ "one or more" if axis.multi else "one" }} of:
+- {{ axis_name(axis) | ucfirst }}, {{ "one or more" if axis.multi else "one" }} of:
 {% for v in values %}
-  - {{ v.label | ucfirst }}: {{ value(v) }}
+  - {{ v.label | ucfirst }}. {{ value(v) }}
 {% endfor %}
 {% endif %}
 {% if axis.guidance %}
   {{ axis.guidance }}
 {% endif %}
 {% endfor %}
+
 {% endif %}
 {% for r in reminders %}
 {% block reminder scoped %}
