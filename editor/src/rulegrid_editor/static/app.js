@@ -96,6 +96,7 @@ function App() {
   const save = async () => {
     const files = unsaved();
     if (!Object.keys(files).length) return;
+    if (problems.length && !confirm(`Save with ${problems.length} problem${problems.length > 1 ? "s" : ""}?`)) return;
     await api("/api/save", { files });
     setSaved({ ...saved, ...files });
     refresh(last.current);

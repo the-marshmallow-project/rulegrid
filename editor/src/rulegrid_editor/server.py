@@ -118,8 +118,8 @@ def _splice(text: bytes, at: Path_, items: list[Any]) -> bytes:
         node = node[key]
     if node.node.style == "flow":
         start, end = node.node.offset, text.index(b"]", node.node.end_offset - 1) + 1
-        flow = "[" + ", ".join(json.dumps(x, ensure_ascii=False) for x in items) + "]"
-        return text[:start] + flow.encode() + text[end:]
+        flow = yamlrocks.dumps(items, option=yamlrocks.OPT_FLOW_STYLE).rstrip()
+        return text[:start] + flow + text[end:]
     last = node[len(node.unwrap()) - 1].node
     indent = " " * (last.column - 3)  # the column of the item's content, past its "- "
     end = text.find(b"\n", last.end_offset) + 1 or len(text)
@@ -221,6 +221,8 @@ class Workspace:
                 return Classification({k: frozenset(v) if isinstance(v, list) else v for k, v in values.items()})
             if classifier is None:
                 raise ValueError("no classifier: set the values, or start the editor with --classifier")
+            if not turn_text.strip():
+                raise ValueError("write a turn to classify")
             if of == "turn":
                 return await classifier.classify(convo, "turn", hits)
             return await classifier.classify([*convo, Message("assistant", response_text)], "response")

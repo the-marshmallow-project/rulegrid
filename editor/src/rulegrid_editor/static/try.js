@@ -41,7 +41,7 @@ function Axes({ axes, c, set, failed = new Set() }) {
 
 export function Try({ attempt, setAttempt, classifier, run }) {
   const turn = useRef(), response = useRef();
-  const [busy, setBusy] = useState(false), [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false), [error, setError] = useState(null), [blank, setBlank] = useState(true);
   const policy = S.policy;
 
   const go = async (values) => {
@@ -64,21 +64,22 @@ export function Try({ attempt, setAttempt, classifier, run }) {
   };
   const clear = () => {
     turn.current.value = response.current.value = "";
+    setBlank(true);
     setAttempt(null);
     setError(null);
     turn.current.focus();
   };
-  const onKeyDown = (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && classifier) go(); };
+  const onKeyDown = (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && classifier && !blank) go(); };
   const timer = useRef();
-  const onInput = () => { if (!classifier) { clearTimeout(timer.current); timer.current = setTimeout(() => go({ turn_values: values("turn"), response_values: attempt?.response ? values("response") : null }), 400); } };
+  const onInput = () => { setBlank(!turn.current.value.trim()); if (!classifier) { clearTimeout(timer.current); timer.current = setTimeout(() => go({ turn_values: values("turn"), response_values: attempt?.response ? values("response") : null }), 400); } };
 
   const a = attempt, p = a?.prescription, unset = a?.missing?.length > 0;
   const articles = a?.compliance?.articles || [];
   const failed = new Set(articles.filter((x) => x.kind === "cell").map((x) => x.detail.split(" ")[0]));
   return html`<aside>
-    <textarea ref=${turn} rows="3" placeholder="A user's turn" onKeyDown=${onKeyDown} onInput=${onInput} />
-    <textarea ref=${response} rows="2" placeholder="The agent's response (optional)" onKeyDown=${onKeyDown} />
-    ${classifier && html`<button class="primary" onClick=${() => go()} disabled=${busy}>Classify</button> `}
+    <textarea ref=${turn} rows="3" placeholder="A user's turn" aria-label="User's turn" onKeyDown=${onKeyDown} onInput=${onInput} />
+    <textarea ref=${response} rows="2" placeholder="The agent's response (optional)" aria-label="Agent's response" onKeyDown=${onKeyDown} />
+    ${classifier && html`<button class="primary" onClick=${() => go()} disabled=${busy || blank}>Classify</button> `}
     <button onClick=${clear}>Clear</button>
     ${busy && html` <span class="muted">classifying…</span>`}
     ${error && html`<p class="error">${error}</p>`}

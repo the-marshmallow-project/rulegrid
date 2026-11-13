@@ -32,7 +32,7 @@ def test_edit_keeps_comments_and_untouched_lines():
 
     appended = edit(LEXICON, ["entries"], [*yamlrocks.loads(LEXICON)["entries"], {"word": "x", "meaning": "y"}])
     assert appended.startswith(LEXICON.split("tags:")[0])
-    assert edit(LEXICON, ["tags"], ["a", "b", "c"]).endswith('tags: ["a", "b", "c"]\n')
+    assert edit(LEXICON, ["tags"], ["a", "b", "c"]).endswith("tags: [a, b, c]\n")
     assert '"second"' not in edit(LEXICON, ["entries", 1], None)
 
 

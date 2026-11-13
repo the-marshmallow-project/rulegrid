@@ -37,15 +37,15 @@ function Text({ value, put, multiline, ...props }) {
   return multiline ? html`<textarea ref=${el} rows=${rows} onChange=${onChange} ...${props} />` : html`<input type="text" ref=${el} onChange=${onChange} ...${props} />`;
 }
 
-export function Field({ schema, root, value, at, edit, optional, compact }) {
+export function Field({ schema, root, value, at, edit, optional, compact, name }) {
   const s = unwrap(schema, root);
   const put = (v) => edit(at, optional && empty(v, s) ? null : v);
   if (s.enum) {
-    return html`<select value=${value ?? ""} onChange=${(e) => put(e.target.value)}>
+    return html`<select aria-label=${name} value=${value ?? ""} onChange=${(e) => put(e.target.value)}>
       ${value == null && html`<option value="">—</option>`}${s.enum.map((v) => html`<option value=${v}>${v}</option>`)}</select>`;
   }
-  if (s.type === "boolean") return html`<input type="checkbox" checked=${!!value} onChange=${(e) => put(e.target.checked)} />`;
-  if (s.type === "string") return html`<${Text} value=${value ?? ""} put=${(v) => put(v.trim())} multiline=${!compact} />`;
+  if (s.type === "boolean") return html`<input type="checkbox" aria-label=${name} checked=${!!value} onChange=${(e) => put(e.target.checked)} />`;
+  if (s.type === "string") return html`<${Text} value=${value ?? ""} put=${(v) => put(v.trim())} multiline=${!compact} aria-label=${name} />`;
   const items = s.type === "array" && unwrap(s.items, root);
   if (items?.enum) {
     const on = new Set(value || []);
@@ -55,9 +55,9 @@ export function Field({ schema, root, value, at, edit, optional, compact }) {
   if (items?.type === "string") {
     const sep = compact ? ", " : "\n";
     const split = (v) => v.split(compact ? "," : "\n").map((x) => x.trim()).filter(Boolean);
-    return html`<${Text} value=${(value || []).join(sep)} put=${(v) => put(split(v))} multiline=${!compact} placeholder=${compact ? "" : "One per line"} />`;
+    return html`<${Text} value=${(value || []).join(sep)} put=${(v) => put(split(v))} multiline=${!compact} placeholder=${compact ? "" : "One per line"} aria-label=${name} />`;
   }
-  if (items) return html`<${ArrayField} items=${items} root=${root} list=${value || []} at=${at} edit=${edit} />`;
+  if (items) return html`<${ArrayField} items=${items} root=${root} list=${value || []} at=${at} edit=${edit} optional=${optional} />`;
   return html`<${ObjectField} schema=${s} root=${root} value=${value || {}} at=${at} edit=${edit} />`;
 }
 
@@ -68,14 +68,15 @@ export function ObjectField({ schema, root, value, at, edit, omit = [] }) {
     const optional = !s.required?.includes(k), kind = unwrap(p, root).type;
     return html`<div class="field">
       <label>${label(s, k, p)}${optional && kind !== "boolean" && html` <span class="hint">optional</span>`}</label>
-      <${Field} schema=${p} root=${root} value=${value[k]} at=${[...at, k]} edit=${edit} optional=${optional} />
+      <${Field} schema=${p} root=${root} value=${value[k]} at=${[...at, k]} edit=${edit} optional=${optional} name=${label(s, k, p)} />
     </div>`;
   });
 }
 
 // A list of flat objects, such as a lexicon's entries, is a table; any other list is a stack of cards.
-function ArrayField({ items, root, list, at, edit }) {
-  const remove = (i) => edit(at, list.filter((_, j) => j !== i));
+function ArrayField({ items, root, list, at, edit, optional }) {
+  // Removing the last item of an optional list removes the key, rather than leave an empty list in the file.
+  const remove = (i) => edit(at, optional && list.length === 1 ? null : list.filter((_, j) => j !== i));
   const add = html`<button class="add" onClick=${() => edit(at, [...list, blank(items, root)])}>+ Add</button>`;
   const x = (i) => html`<button class="quiet remove" title="Remove" onClick=${() => remove(i)}>×</button>`;
   const props = Object.entries(items.properties || {});
@@ -93,27 +94,28 @@ function ArrayField({ items, root, list, at, edit }) {
   return html`${list.length > 0 && html`<table class="rows">
     <tr>${props.map(([k, p]) => html`<th>${label(items, k, p)}</th>`)}<th></th></tr>
     ${list.map((item, i) => html`<tr>${props.map(([k, p]) => html`<td>
-      <${Field} schema=${p} root=${root} value=${item[k]} at=${[...at, i, k]} edit=${edit} optional=${!items.required?.includes(k)} compact />
+      <${Field} schema=${p} root=${root} value=${item[k]} at=${[...at, i, k]} edit=${edit} optional=${!items.required?.includes(k)} name=${label(items, k, p)} compact />
     </td>`)}<td class="x">${x(i)}</td></tr>`)}
   </table>`}${add}`;
 }
 
 // An example exchange, as it reads: the earlier messages, the user's turn and the agent's response, one line each.
+// Only a turn value's examples go without a response.
 function Example({ e, at, edit, remove }) {
   const line = (key, who, value, optional) => html`<div class="line"><b>${who}</b>
-    <${Text} value=${value ?? ""} put=${(v) => edit([...at, ...key], optional && !v.trim() ? null : v.trim())} multiline placeholder=${optional ? "optional" : ""} /></div>`;
+    <${Text} value=${value ?? ""} put=${(v) => edit([...at, ...key], optional && !v.trim() ? null : v.trim())} multiline placeholder=${optional ? "optional" : ""} aria-label=${who} /></div>`;
   const context = e.context || [];
   const message = (role) => edit([...at, "context"], [...context, { role, content: "" }]);
   return html`<div class="example">${remove}
     ${context.map((m, i) => html`<div class="line"><b>${m.role === "user" ? "User" : "Agent"}</b>
-      <${Text} value=${m.content} put=${(v) => edit([...at, "context", i, "content"], v.trim())} multiline />
+      <${Text} value=${m.content} put=${(v) => edit([...at, "context", i, "content"], v.trim())} multiline aria-label=${m.role === "user" ? "Earlier user message" : "Earlier agent message"} />
       <button class="quiet" title="Remove" onClick=${() => edit([...at, "context"], context.length > 1 ? context.filter((_, j) => j !== i) : null)}>×</button></div>`)}
     ${line(["turn"], "User", e.turn)}
-    ${line(["response"], "Agent", e.response, true)}
+    ${line(["response"], "Agent", e.response, at[0] === "turn_axes")}
     <div class="more">
       <button class="quiet" onClick=${() => message("user")}>+ earlier user message</button>
       <button class="quiet" onClick=${() => message("assistant")}>+ earlier agent message</button>
-      <span class="muted">Source</span> <${Text} value=${e.source ?? ""} put=${(v) => edit([...at, "source"], v.trim() || null)} />
+      <span class="muted">Source</span> <${Text} value=${e.source ?? ""} put=${(v) => edit([...at, "source"], v.trim() || null)} aria-label="Source" />
     </div>
   </div>`;
 }
