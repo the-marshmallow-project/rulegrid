@@ -254,12 +254,22 @@ class Report:
         if audited := self.compliance():
             lines += ["", "| Cell | Complies | Rows |", "|---|---|---|"]
             lines += [f"| {cell} | {ok} | {total} |" for cell, (ok, total) in audited.items()]
+
+        def row(r: Result) -> str:
+            """The row's source and its turn, so a line can be found without opening the data."""
+            turn = r.row.conversation[-1].content
+            turn = turn if len(turn) <= 80 else turn[:79] + "…"
+            return f"{r.row.source} {turn!r}".lstrip()
+
         wrong = [(r, c) for r in self.results for c in r.checks if not c[1]]
         if wrong:
             lines += ["", "## Disagreements", ""]
+            lines += [f"- {row(r)}: {label} {detail}" for r, (label, _, detail) in wrong]
+        breached = [(r, r.compliance) for r in self.results if r.compliance is not None and not r.compliance.ok]
+        if breached:
+            lines += ["", "## Non-compliant", ""]
             lines += [
-                f"- {r.row.source or r.row.conversation[-1].content!r}: {label} {detail}"
-                for r, (label, _, detail) in wrong
+                f"- {row(r)}: " + "; ".join(f"{a.id} {a.detail}".rstrip() for a in c.articles) for r, c in breached
             ]
         return "\n".join(lines) + "\n"
 
