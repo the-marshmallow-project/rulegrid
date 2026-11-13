@@ -136,7 +136,7 @@ class Workspace:
 
     def __init__(self, path: Path, classifier: Callable[[Policy], Classifier] | None):
         policy = load(path)
-        profile_dir = path.resolve()
+        profile_dir = policy.profile_dir.resolve()
         self.base = Path(os.path.commonpath([policy.root, profile_dir]))
         self.profile = profile_dir.relative_to(self.base)
         names = [policy.root / STRUCTURE, profile_dir / PROFILE, *sorted(profile_dir.glob("lexicons/*.yaml"))]
@@ -255,7 +255,7 @@ def _schemas(policy: Policy) -> dict[str, Any]:
         },
         "required": ["reminds", "entries"],
     }
-    return {"profile": profile_schema(policy), "lexicon": lexicon}
+    return {"profile": profile_schema(policy.structure), "lexicon": lexicon}
 
 
 def _classification(c: Classification) -> dict[str, Any]:
@@ -344,7 +344,8 @@ def serve(path: str | Path, port: int = 8765, classifier: Callable[[Policy], Cla
     """Serve the editor for the profile at `path` on `http://127.0.0.1:{port}`, until interrupted.
 
     Args:
-        path: a profile directory, such as `examples/rbr/profiles/default`.
+        path: a profile directory, such as `examples/rbr/profiles/default`, its `profile.yaml`, or a policy directory
+            with a single profile.
         port: the local port.
         classifier: makes the try panel's classifier from the policy being edited. Without it, the try panel reads
             the values set by hand.

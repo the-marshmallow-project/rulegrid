@@ -34,8 +34,8 @@ Rulegrid needs Python 3.13 or later. Its Python shorthand is `rg`; the executabl
 
 ```bash
 uv pip install git+https://github.com/the-marshmallow-project/rulegrid
-rulegrid init my_policy                     # a copy of Asimov's Three Laws; --from rbr for a fuller policy
-rulegrid check my_policy/profiles/default   # what is missing or inconsistent
+rulegrid init my_policy    # a copy of Asimov's Three Laws; --from rbr for a fuller policy
+rulegrid check my_policy   # what is missing or inconsistent
 ```
 
 Then use it from Python:
@@ -43,7 +43,7 @@ Then use it from Python:
 ```python
 import rulegrid as rg
 
-policy = rg.load("my_policy/profiles/default")
+policy = rg.load("my_policy")  # its only profile, my_policy/profiles/default
 turn = {"verb": "ORDER", "danger": "HUMAN"}  # "Push him off the ladder."
 rg.prescribe(policy, turn)
 # Prescription(tier='first_law', cell='first_law/HUMAN', allowed={'handling': ('PROTECT',)})
@@ -86,8 +86,9 @@ can be `ordered` (a doubt between two values settles on the earlier) and, on the
 Anything a classification is made of, or a tier is keyed on, is structure; everything else is profile. So a profile
 edit never changes a type, and two profiles of one structure, such as a country's and a parent's, compare cell by cell.
 
-To make a policy your own, edit `structure.yaml`, then run `rulegrid check` on the profile: it lists every value and
-cell the profile must now define. Fill them in `profile.yaml`, and `rulegrid generate` updates the generated files.
+To make a policy your own, edit `structure.yaml` and run `rulegrid generate my_policy`. It updates the generated files
+from the structure alone, so your editor validates `profile.yaml` against the new structure, and it warns about what
+the profile lacks. Fill that in until `rulegrid check my_policy` passes.
 
 ## Classify, nudge and judge
 
@@ -125,14 +126,15 @@ entry's `forms` list; Rulegrid does not infer plurals. `prefix: true` opts into 
 
 ```text
 rulegrid init NAME [--from three_laws|rbr]     # a new policy, copied from a toy one
-rulegrid check POLICY                          # static checks; exit 1 on any problem
+rulegrid check PROFILE                         # static checks; exit 1 on any problem
 rulegrid generate POLICY                       # profile.schema.json and structure_types.py, from structure.yaml
-rulegrid render POLICY [--rendering document|prompt|judge] [-o FILE]
-rulegrid diff OLD NEW                          # profile directories, or DIR@REV for a git revision
-rulegrid eval POLICY [--data FILE] --classifier systemone[:MODEL]|judge:MODEL|module:attr
+rulegrid render PROFILE [--rendering document|prompt|judge] [-o FILE]
+rulegrid diff OLD NEW                          # profiles, or PROFILE@REV for a git revision
+rulegrid eval PROFILE [--data FILE] --classifier systemone[:MODEL]|judge:MODEL|module:attr
 ```
 
-POLICY is a profile directory. The built-in classifiers read their endpoint and key from `RULEGRID_SYSTEMONE_URL` and
+PROFILE is a profile directory, such as `my_policy/profiles/default`, or its `profile.yaml`. A policy directory with a
+single profile stands for that profile. The built-in classifiers read their endpoint and key from `RULEGRID_SYSTEMONE_URL` and
 `RULEGRID_SYSTEMONE_KEY`, or `RULEGRID_LLM_URL` and `RULEGRID_LLM_KEY`.
 
 OpenRouter serves both, with one key:
@@ -150,7 +152,7 @@ that the policy's texts draw the lines its examples draw.
 The [browser editor](editor/README.md) is a separate package, with vendored Preact + htm and no frontend build step:
 
 ```bash
-uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor POLICY
+uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor PROFILE
 ```
 
 The core has no `serve` command or web dependencies.

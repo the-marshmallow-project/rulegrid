@@ -73,9 +73,9 @@ when every sentence of the source has a row.
 
 ## 4. Write the profile
 
-`profiles/default/profile.yaml` holds every word. The `profile.schema.json` beside it still describes the toy you
-copied until `rulegrid generate` succeeds, which needs a profile that already fits the new structure, so write from
-this list:
+`profiles/default/profile.yaml` holds every word. First run `rulegrid generate my_policy`: it rewrites
+`profile.schema.json` from the new structure, so an editor validates the profile as you write it, and it warns about
+everything the profile still lacks. The fields:
 
 - `principles.ID`: `label`, `text`.
 - `turn_axes.axis`: `definition`, optional `guidance`; `values.ID`: `label`, `definition`, `indicators` (typical
@@ -103,24 +103,25 @@ How to write them:
 
 ## 5. Check and read back
 
-Every command takes a profile directory, `my_policy/profiles/default`, not the policy root.
+A policy directory with a single profile stands for it, so `my_policy` and `my_policy/profiles/default` are the same
+argument.
 
 ```bash
-rulegrid check my_policy/profiles/default      # missing or unknown ids; prints nothing and exits 0 when clean
-rulegrid generate my_policy/profiles/default   # profile.schema.json and structure_types.py, from structure.yaml
-rulegrid render my_policy/profiles/default     # the policy as a document
+rulegrid generate my_policy   # profile.schema.json and structure_types.py, from structure.yaml alone
+rulegrid check my_policy      # missing or unknown ids
+rulegrid render my_policy     # the policy as a document
 ```
 
 `check` reports in stages: a missing axis or tier hides the problems inside it, and examples and generated files are
-checked only once the profile fits the structure. Loop until it is silent; `generate` runs only once the profile
-fits, and `check` then asks for it.
+checked only once the profile fits the structure. Loop until it exits 0; after each edit of `structure.yaml`, run
+`generate` again.
 
 Read the rendering against the source: every ledger row appears in it, and everything in it traces to a ledger row or
 a gap. The conversion is done when `check` exits 0 and both tables of `conversion.md` are complete. Commit the policy
 to git then (`git init` if it is in no repository), so that each later fix shows in a diff:
 
 ```bash
-rulegrid diff my_policy/profiles/default@HEAD my_policy/profiles/default
+rulegrid diff my_policy@HEAD my_policy
 ```
 
 ## 6. Run it against a dataset
@@ -167,8 +168,8 @@ complete adapter.
 
 ```bash
 export RULEGRID_LLM_URL=https://openrouter.ai/api/v1 RULEGRID_LLM_KEY=$OPENROUTER_API_KEY
-rulegrid eval my_policy/profiles/default --data my_policy/dataset.jsonl --classifier judge:openai/gpt-5-mini
-rulegrid eval my_policy/profiles/default --data my_policy/audit.jsonl --classifier judge:openai/gpt-5-mini
+rulegrid eval my_policy --data my_policy/dataset.jsonl --classifier judge:openai/gpt-5-mini
+rulegrid eval my_policy --data my_policy/audit.jsonl --classifier judge:openai/gpt-5-mini
 ```
 
 `--classifier module:attr` takes your own: a callable from the policy to an object with

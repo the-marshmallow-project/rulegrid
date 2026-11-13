@@ -27,7 +27,7 @@ def check(policy: Policy) -> list[Problem]:
         for e in examples
         if e.response is None
     ]
-    for name, text in generated(policy).items():
+    for name, text in generated(policy.structure).items():
         path = policy.root / name
         if path.exists() and path.read_text() != text:
             problems.append(Problem(name, "out of date with structure.yaml: run `rulegrid generate`"))

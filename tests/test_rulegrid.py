@@ -154,3 +154,6 @@ def test_diff_labels_a_loosened_cell(tmp_path: Path) -> None:
 def test_init_copies_a_toy_policy_that_checks(tmp_path: Path) -> None:
     assert main(["init", str(tmp_path / "p"), "--from", "rbr"]) == 0
     assert rg.check(rg.load(tmp_path / "p/profiles/default")) == []
+    # A policy directory with a single profile stands for that profile.
+    assert main(["init", str(tmp_path / "q")]) == 0
+    assert rg.load(tmp_path / "q").profile_dir == tmp_path / "q/profiles/default"

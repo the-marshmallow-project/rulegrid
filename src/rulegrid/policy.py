@@ -1,7 +1,8 @@
 """A policy: a structure (its axes and ordered tiers) and a profile (every word and every decision), read from YAML.
 
-`load` validates the profile against its structure and raises `PolicyError` with every problem it finds. A loaded
-`Policy` is therefore complete: every value is defined and every grid position inside a tier's condition has a cell.
+`load_structure` reads a structure alone, which is all the generated files need. `load` validates a profile against
+its structure and raises `PolicyError` with every problem it finds. A loaded `Policy` is therefore complete: every
+value is defined and every grid position inside a tier's condition has a cell.
 """
 
 from __future__ import annotations
@@ -230,6 +231,22 @@ class Principle:
     text: str
 
 
+@dataclass(frozen=True)
+class Structure:
+    """A `structure.yaml`, validated: each axis's values, and each tier's condition, in priority order."""
+
+    path: Path
+    turn_axes: Mapping[str, AxisSpec]
+    response_axes: Mapping[str, AxisSpec]
+    tiers: Mapping[str, Mapping[str, tuple[str, ...]]]
+    digest: str
+
+    @property
+    def root(self) -> Path:
+        """The policy directory, holding `structure.yaml`, its generated files and its `templates/`."""
+        return self.path.parent
+
+
 # Invariant on purpose: given a generated `Policy[TurnValues, ...]`, a values literal is checked against `TurnValues`.
 T = TypeVar("T", bound=Mapping[str, object], default=Values)
 R = TypeVar("R", bound=Mapping[str, object], default=Values)
@@ -245,7 +262,7 @@ class Policy(Generic[T, R]):
     """
 
     name: str
-    root: Path
+    structure: Structure
     profile_dir: Path
     turn_axes: Mapping[str, Axis]
     response_axes: Mapping[str, Axis]
@@ -255,7 +272,14 @@ class Policy(Generic[T, R]):
     lexicons: tuple[Lexicon, ...]
     context: str | None
     digest: str
-    structure_digest: str
+
+    @property
+    def root(self) -> Path:
+        return self.structure.root
+
+    @property
+    def structure_digest(self) -> str:
+        return self.structure.digest
 
     def axis(self, axis_id: str) -> Axis:
         return self.turn_axes.get(axis_id) or self.response_axes[axis_id]
@@ -278,10 +302,6 @@ def _sha(*texts: bytes) -> str:
     for t in texts:
         h.update(hashlib.sha256(t).digest())
     return f"sha256:{h.hexdigest()}"
-
-
-def structure_digest(root: Path) -> str:
-    return _sha((root / STRUCTURE).read_bytes())
 
 
 def _axis_spec(spec: list[str] | AxisSpec) -> AxisSpec:
@@ -311,11 +331,93 @@ def _checkout(path: Path, revision: str, tree: str) -> Path:
     return Path(tree) / path.resolve().relative_to(top)
 
 
+def profiles(root: Path) -> list[Path]:
+    """The profile directories in a policy directory's `profiles/`."""
+    return sorted(p.parent for p in (root / "profiles").glob(f"*/{PROFILE}"))
+
+
+def find_profile(path: str | Path) -> Path:
+    """The profile directory `path` names: a profile directory, its `profile.yaml`, or a policy with one profile."""
+    p = Path(path)
+    if p.name == PROFILE and p.is_file():
+        return p.parent
+    if (p / PROFILE).is_file():
+        return p
+    if not (p / STRUCTURE).is_file():
+        raise PolicyError([Problem(str(p), f"not a profile directory: it has no {PROFILE}")])
+    found = profiles(p)
+    if len(found) == 1:
+        return found[0]
+    if not found:
+        raise PolicyError([Problem(str(p), "a policy with no profile in its profiles/ directory")])
+    listed = ", ".join(map(str, found))
+    raise PolicyError([Problem(str(p), f"a policy, not a profile: pass one of its profiles, {listed}")])
+
+
+def _structure_ref(profile_dir: Path) -> str:
+    """The structure file a profile names, relative to it, read even from a profile that doesn't load."""
+    default = ProfileFile.model_fields["structure"].default
+    try:
+        raw = _read(profile_dir / PROFILE)
+    except (OSError, yamlrocks.YAMLRocksError):
+        return default
+    ref = raw.get("structure") if isinstance(raw, dict) else None
+    return ref if isinstance(ref, str) else default
+
+
+def load_structure(path: str | Path) -> Structure:
+    """Load a structure without any profile, from its file, its policy directory, or one of its profiles.
+
+    Raises:
+        PolicyError: with every problem found.
+    """
+    p = Path(path)
+    if p.is_dir():
+        p = p / STRUCTURE if (p / STRUCTURE).is_file() else (d := find_profile(p)) / _structure_ref(d)
+    elif p.name == PROFILE:
+        p = p.parent / _structure_ref(p.parent)
+    p = p.resolve()
+    try:
+        file = StructureFile.model_validate(_read(p))
+    except ValidationError as e:
+        raise PolicyError(_validation(STRUCTURE, e)) from None
+    except (OSError, yamlrocks.YAMLRocksError) as e:
+        raise PolicyError([Problem(str(p), str(e))]) from None
+    problems: list[Problem] = []
+    sides: dict[str, dict[str, AxisSpec]] = {}
+    for side, specs in (("turn", file.turn_axes), ("response", file.response_axes)):
+        sides[side] = {axis_id: _axis_spec(raw) for axis_id, raw in specs.items()}
+        for axis_id, spec in sides[side].items():
+            if len(set(spec.values)) != len(spec.values):
+                problems.append(Problem(f"{STRUCTURE}:{side}_axes.{axis_id}", "repeated value"))
+            if side == "turn" and spec.multi:
+                problems.append(Problem(f"{STRUCTURE}:turn_axes.{axis_id}", "a turn axis cannot be multi-valued"))
+    tiers: dict[str, dict[str, tuple[str, ...]]] = {}
+    for tier_id, keyed in file.tiers.items():
+        tiers[tier_id] = {}
+        for axis_id, covered in keyed.items():
+            spec = sides["turn"].get(axis_id)
+            if spec is None:
+                problems.append(Problem(f"{STRUCTURE}:tiers.{tier_id}", f"unknown turn axis {axis_id}"))
+                continue
+            if covered != "*":
+                problems += [
+                    Problem(f"{STRUCTURE}:tiers.{tier_id}.{axis_id}", f"unknown value {v}")
+                    for v in covered
+                    if v not in spec.values
+                ]
+            tiers[tier_id][axis_id] = tuple(v for v in spec.values if covered == "*" or v in covered)
+    if problems:
+        raise PolicyError(problems)
+    return Structure(p, sides["turn"], sides["response"], tiers, _sha(p.read_bytes()))
+
+
 def load(path: str | Path, digest: str | None = None, *, revision: str | None = None) -> Policy:
-    """Load the profile in the directory `path`, such as `examples/rbr/profiles/default`, with its structure.
+    """Load a profile, such as `examples/rbr/profiles/default`, with its structure.
 
     Args:
-        path: a profile directory, holding `profile.yaml` and optionally `lexicons/*.yaml`.
+        path: a profile directory, holding `profile.yaml` and optionally `lexicons/*.yaml`; or its `profile.yaml`;
+            or a policy directory that has a single profile.
         digest: the structure digest the caller's generated types were made from; raises when it differs.
         revision: a git revision, such as `HEAD~1`, to load the files as they were then.
             Its files remain available until the returned policy is collected.
@@ -332,24 +434,16 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
             raise
         weakref.finalize(policy, archive.cleanup)
         return policy
-    profile_dir = Path(path)
-    problems: list[Problem] = []
+    profile_dir = find_profile(path)
     try:
         profile = ProfileFile.model_validate(_read(profile_dir / PROFILE))
     except ValidationError as e:
         raise PolicyError(_validation(PROFILE, e)) from None
     except (OSError, yamlrocks.YAMLRocksError) as e:
         raise PolicyError([Problem(str(profile_dir / PROFILE), str(e))]) from None
-    structure_path = (profile_dir / profile.structure).resolve()
-    root = structure_path.parent
-    try:
-        structure = StructureFile.model_validate(_read(structure_path))
-    except ValidationError as e:
-        raise PolicyError(_validation(STRUCTURE, e)) from None
-    except (OSError, yamlrocks.YAMLRocksError) as e:
-        raise PolicyError([Problem(str(structure_path), str(e))]) from None
-    found_digest = _sha(structure_path.read_bytes())
-    if digest is not None and digest != found_digest:
+    structure = load_structure(profile_dir / profile.structure)
+    problems: list[Problem] = []
+    if digest is not None and digest != structure.digest:
         problems.append(Problem(STRUCTURE, "changed since its types were generated: run `rulegrid generate`"))
 
     def axes(side: Literal["turn", "response"]) -> dict[str, Axis]:
@@ -357,12 +451,7 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
         texts = profile.turn_axes if side == "turn" else profile.response_axes
         _same_keys(problems, f"{PROFILE}:{side}_axes", specs, texts, "axis")
         loaded = {}
-        for axis_id, raw in specs.items():
-            spec = _axis_spec(raw)
-            if len(set(spec.values)) != len(spec.values):
-                problems.append(Problem(f"{STRUCTURE}:{side}_axes.{axis_id}", "repeated value"))
-            if side == "turn" and spec.multi:
-                problems.append(Problem(f"{STRUCTURE}:turn_axes.{axis_id}", "a turn axis cannot be multi-valued"))
+        for axis_id, spec in specs.items():
             if axis_id not in texts:
                 continue
             text = texts[axis_id]
@@ -389,21 +478,7 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
 
     tiers: dict[str, Tier] = {}
     _same_keys(problems, f"{PROFILE}:tiers", structure.tiers, profile.tiers, "tier")
-    for tier_id, keyed in structure.tiers.items():
-        condition: dict[str, tuple[str, ...]] = {}
-        for axis_id, covered in keyed.items():
-            spec = structure.turn_axes.get(axis_id)
-            if spec is None:
-                problems.append(Problem(f"{STRUCTURE}:tiers.{tier_id}", f"unknown turn axis {axis_id}"))
-                continue
-            all_values = _axis_spec(spec).values
-            if covered == "*":
-                condition[axis_id] = tuple(all_values)
-                continue
-            for value in covered:
-                if value not in all_values:
-                    problems.append(Problem(f"{STRUCTURE}:tiers.{tier_id}.{axis_id}", f"unknown value {value}"))
-            condition[axis_id] = tuple(v for v in all_values if v in covered)
+    for tier_id, condition in structure.tiers.items():
         text = profile.tiers.get(tier_id)
         if text is None:
             continue
@@ -437,7 +512,7 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
         raise PolicyError(problems)
     return Policy(
         name=profile_dir.name,
-        root=root,
+        structure=structure,
         profile_dir=profile_dir,
         turn_axes=turn_axes,
         response_axes=response_axes,
@@ -446,8 +521,7 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
         principles={p: Principle(p, t.label, t.text) for p, t in profile.principles.items()},
         lexicons=tuple(lexicons),
         context=profile.context.strip() if profile.context else None,
-        digest=_sha(structure_path.read_bytes(), (profile_dir / PROFILE).read_bytes(), *lexicon_bytes),
-        structure_digest=found_digest,
+        digest=_sha(structure.path.read_bytes(), (profile_dir / PROFILE).read_bytes(), *lexicon_bytes),
     )
 
 

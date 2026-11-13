@@ -1,8 +1,8 @@
 """The `rulegrid` command: create, check, generate, render, diff and evaluate policies.
 
-POLICY is a profile directory, such as `examples/rbr/profiles/default`. The built-in classifiers read their endpoint and
-key from the environment: `RULEGRID_SYSTEMONE_URL` and `RULEGRID_SYSTEMONE_KEY`, or `RULEGRID_LLM_URL` and
-`RULEGRID_LLM_KEY`.
+PROFILE is a profile directory, such as `examples/rbr/profiles/default`, its `profile.yaml`, or a policy directory
+with a single profile. The built-in classifiers read their endpoint and key from the environment:
+`RULEGRID_SYSTEMONE_URL` and `RULEGRID_SYSTEMONE_KEY`, or `RULEGRID_LLM_URL` and `RULEGRID_LLM_KEY`.
 """
 
 from __future__ import annotations
@@ -22,12 +22,13 @@ from rulegrid.diff import diff
 from rulegrid.evaluate import Dataset, evaluate
 from rulegrid.generate import generate
 from rulegrid.judge import Judge, openai_compatible
-from rulegrid.policy import Policy, PolicyError, load
+from rulegrid.policy import Policy, PolicyError, load, load_structure, profiles
 from rulegrid.render import render
 from rulegrid.systemone import SystemOne
 from rulegrid.types import Classifier
 
 TOYS = ("three_laws", "rbr")
+PROFILE_HELP = "a profile directory, its profile.yaml, or a policy directory with a single profile"
 
 
 def _init(name: str, toy: str) -> int:
@@ -42,6 +43,20 @@ def _init(name: str, toy: str) -> int:
     profile = Path(name, "profiles", "default")
     print(f"wrote {name}, a copy of the {toy} policy. Edit its structure.yaml and {profile / 'profile.yaml'}, then:")
     print(f"  rulegrid check {profile}")
+    return 0
+
+
+def _generate(path: str) -> int:
+    """Write the generated files from the structure alone, and warn about each profile that doesn't fit it yet."""
+    structure = load_structure(path)
+    for name in generate(structure):
+        print(f"wrote {structure.root / name}")
+    for profile in profiles(structure.root):
+        try:
+            load(profile)
+        except PolicyError as error:
+            print(f"warning: {profile} does not fit the structure yet:", file=sys.stderr)
+            print("\n".join(f"  {p}" for p in error.problems), file=sys.stderr)
     return 0
 
 
@@ -83,19 +98,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     i = commands.add_parser("init", help="a new policy, copied from a toy policy")
     i.add_argument("name", help="the directory to create")
     i.add_argument("--from", dest="toy", choices=TOYS, default=TOYS[0])
-    commands.add_parser("check", help="static checks; exit 1 on any problem").add_argument("policy")
+    commands.add_parser("check", help="static checks; exit 1 on any problem").add_argument(
+        "profile", metavar="PROFILE", help=PROFILE_HELP
+    )
     commands.add_parser(
-        "generate", help="profile.schema.json and structure_types.py, from structure.yaml"
-    ).add_argument("policy")
+        "generate", help="profile.schema.json and structure_types.py, from structure.yaml alone"
+    ).add_argument("policy", metavar="POLICY", help="a policy directory, its structure.yaml, or one of its profiles")
     r = commands.add_parser("render", help="the policy as text")
-    r.add_argument("policy")
+    r.add_argument("profile", metavar="PROFILE", help=PROFILE_HELP)
     r.add_argument("--rendering", choices=["document", "prompt", "judge"], default="document")
     r.add_argument("-o", "--output", help="a file, stdout by default")
     d = commands.add_parser("diff", help="what changed between two versions; DIR@REV reads a git revision")
     d.add_argument("old")
     d.add_argument("new")
     e = commands.add_parser("eval", help="a classifier on a dataset, the policy's own examples by default")
-    e.add_argument("policy")
+    e.add_argument("profile", metavar="PROFILE", help=PROFILE_HELP)
     e.add_argument("--data", help="a JSONL dataset")
     e.add_argument("--classifier", required=True, help="systemone[:MODEL], judge:MODEL or module:attr")
     e.add_argument("--json", action="store_true", help="the agreement per label as JSON")
@@ -110,7 +127,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "diff":
             print(diff(_load_at(args.old), _load_at(args.new)))
             return 0
-        policy = load(args.policy)
+        if args.command == "generate":
+            return _generate(args.policy)
+        policy = load(args.profile)
     except PolicyError as error:
         print(error, file=sys.stderr)
         return 1
@@ -119,10 +138,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         for problem in problems:
             print(problem)
         return 1 if problems else 0
-    if args.command == "generate":
-        for name in generate(policy):
-            print(f"wrote {policy.root / name}")
-        return 0
     if args.command == "render":
         text = render(policy, args.rendering)
         if args.output:

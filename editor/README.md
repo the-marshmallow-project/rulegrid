@@ -3,10 +3,10 @@
 Browse, edit and try a [rulegrid](../README.md) policy in the browser, with one command:
 
 ```bash
-uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor POLICY
+uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor PROFILE
 ```
 
-POLICY is a profile directory, such as `examples/rbr/profiles/default`. The page mirrors the policy's concepts: its
+PROFILE is a profile directory, such as `examples/rbr/profiles/default`. The page mirrors the policy's concepts: its
 profile (context and principles), its structure, its turn and response axes and their values, its tiers and their
 grids of cells, its prohibitions and its lexicons. Every id links to its definition and previews it on hover.
 

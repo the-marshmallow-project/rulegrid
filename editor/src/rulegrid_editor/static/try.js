@@ -5,7 +5,7 @@ import { Id, Ref, S, ValueRef, html, tierNumber, tierOf } from "./ui.js";
 const NoClassifier = () => html`<div class="note">No classifier: set the values by hand, or restart the editor with one, such as:
 <pre>export RULEGRID_SYSTEMONE_URL=https://openrouter.ai/api
 export RULEGRID_SYSTEMONE_KEY=$OPENROUTER_API_KEY
-rulegrid-editor POLICY --classifier systemone:liquid/d1-ultra</pre></div>`;
+rulegrid-editor PROFILE --classifier systemone:liquid/d1-ultra</pre></div>`;
 
 // A classifier's confidence: the top values' probabilities, or the evidence it quotes.
 function Scores({ c, axis }) {
