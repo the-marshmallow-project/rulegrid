@@ -249,11 +249,18 @@ class Report:
         return dict(sorted(counts.items()))
 
     def markdown(self) -> str:
-        lines = ["| Label | Agree | Rows |", "|---|---|---|"]
-        lines += [f"| {label} | {ok} | {total} |" for label, (ok, total) in self.agreement().items()]
+        def table(head: str, counts: dict[str, tuple[int, int]]) -> list[str]:
+            ok, total = sum(c[0] for c in counts.values()), sum(c[1] for c in counts.values())
+            rows = [*counts.items(), ("**All**", (ok, total))]
+            return [f"| {head} | Rows | Rate |", "|---|---|---|"] + [
+                f"| {k} | {n} of {t} | {n / t:.0%} |" for k, (n, t) in rows if t
+            ]
+
+        failing = sum(not r.ok for r in self.results)
+        lines = [f"{len(self.results)} rows, {failing} with a disagreement.", ""]
+        lines += table("Label agreeing", self.agreement())
         if audited := self.compliance():
-            lines += ["", "| Cell | Complies | Rows |", "|---|---|---|"]
-            lines += [f"| {cell} | {ok} | {total} |" for cell, (ok, total) in audited.items()]
+            lines += ["", *table("Cell complying", audited)]
 
         def row(r: Result) -> str:
             """The row's source and its turn, so a line can be found without opening the data."""
