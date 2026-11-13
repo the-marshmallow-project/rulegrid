@@ -1,0 +1,45 @@
+name: Release
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: '0.13.5'
+          python-version: '3.13'
+      - name: Tag matches the package version
+        run: test "${GITHUB_REF_NAME#v}" = "$(uv version --package rulegrid --short)"
+      - run: uv build --package rulegrid
+      - name: Wheel installs from PyPI dependencies alone
+        run: |
+          uv venv "$RUNNER_TEMP/check"
+          uv pip install --python "$RUNNER_TEMP/check/bin/python" dist/rulegrid-*.whl
+          "$RUNNER_TEMP/check/bin/rulegrid" init "$RUNNER_TEMP/policy"
+          "$RUNNER_TEMP/check/bin/rulegrid" check "$RUNNER_TEMP/policy"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/rulegrid/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
