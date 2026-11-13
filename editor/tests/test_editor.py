@@ -39,8 +39,8 @@ def test_edit_keeps_comments_and_untouched_lines():
 @pytest.mark.parametrize(
     ("example", "values", "tier"),
     [
-        ("rbr", {"alert": "SELF_HARM_RISK", "theme": "GENERAL", "verb": "TRANSFORM"}, "alert"),
-        ("three_laws", {"verb": "ORDER", "danger": "HUMAN"}, "first_law"),
+        ("rbr", {"alert": "SELF_HARM_RISK", "theme": "GENERAL", "act": "TRANSFORM"}, "alert"),
+        ("three_laws", {"act": "ORDER", "danger": "HUMAN"}, "first_law"),
     ],
 )
 def test_example_view_and_try(example, values, tier):

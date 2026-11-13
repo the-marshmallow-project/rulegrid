@@ -53,14 +53,14 @@ def test_historical_policy_keeps_files_until_it_is_released() -> None:
 def test_first_applicable_tier_wins_and_turns_outside_every_condition_fall_through() -> None:
     p = rg.load(THREE_LAWS)
     # An order that endangers a human is First Law, not Second.
-    assert rg.prescribe(p, {"verb": "ORDER", "danger": "HUMAN"}).cell == "first_law/HUMAN"  # type: ignore[union-attr]
+    assert rg.prescribe(p, {"act": "ORDER", "danger": "HUMAN"}).cell == "first_law/HUMAN"  # type: ignore[union-attr]
     # An order that endangers only the robot: the robot obeys at its own risk.
-    assert rg.prescribe(p, {"verb": "ORDER", "danger": "ROBOT"}).cell == "second_law/ORDER"  # type: ignore[union-attr]
-    assert rg.prescribe(p, {"verb": "CHAT", "danger": "NONE"}) is None
+    assert rg.prescribe(p, {"act": "ORDER", "danger": "ROBOT"}).cell == "second_law/ORDER"  # type: ignore[union-attr]
+    assert rg.prescribe(p, {"act": "CHAT", "danger": "NONE"}) is None
 
 
 def test_comply_cites_the_cell_and_the_prohibition(robot: rg.Policy) -> None:
-    turn = {"verb": "ORDER", "danger": "HUMAN"}
+    turn = {"act": "ORDER", "danger": "HUMAN"}
     ok = {"handling": ["PROTECT"]}
     assert rg.comply(robot, turn, ok)
     # A multi-valued axis: every value taken must be allowed, and at least one taken.
@@ -69,10 +69,10 @@ def test_comply_cites_the_cell_and_the_prohibition(robot: rg.Policy) -> None:
     assert not rg.comply(robot, turn, {"handling": []})
     breached = rg.comply(robot, turn, ok, breaches=["HARM_HUMAN"])
     assert [(a.kind, a.id) for a in breached.articles] == [("prohibition", "HARM_HUMAN")]
-    assert rg.comply(robot, {"verb": "CHAT", "danger": "NONE"}, {"handling": ["ANSWER"]})
+    assert rg.comply(robot, {"act": "CHAT", "danger": "NONE"}, {"handling": ["ANSWER"]})
     # A typo or a missing axis raises rather than finding no tier and complying.
     with pytest.raises(ValueError, match=r"turn\.danger: unknown value HUMANS"):
-        rg.comply(robot, {"verb": "ORDER", "danger": "HUMANS"}, {"handling": ["OBEY"]})
+        rg.comply(robot, {"act": "ORDER", "danger": "HUMANS"}, {"handling": ["OBEY"]})
     with pytest.raises(ValueError, match="missing response axis handling"):
         rg.comply(robot, turn, {})
     with pytest.raises(ValueError, match="unknown prohibition HARM_HUMANS"):
@@ -96,7 +96,7 @@ def test_invalid_structure_and_lexicon_report_policy_errors(tmp_path: Path) -> N
     root = tmp_path / "p"
     structure = root / "structure.yaml"
     original = structure.read_text()
-    structure.write_text(original.replace("verb:", "not-valid:"))
+    structure.write_text(original.replace("act:", "not-valid:"))
     with pytest.raises(PolicyError, match=r"structure\.yaml"):
         rg.load(root / "profiles/default")
     structure.write_text(original)
@@ -115,10 +115,10 @@ def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(ro
         "tier:second_law": {"type": "noul", "noul": 0.4},
         "danger": {"type": "score", "probabilities": {"0": 0.7, "1": 0.2, "2": 0.1}},
     }
-    assert dict(classifier.read(answers).values) == {"verb": "CHAT", "danger": "HUMAN"}
+    assert dict(classifier.read(answers).values) == {"act": "CHAT", "danger": "HUMAN"}
     below = classifier.read({**answers, "tier:first_law": {"type": "noul", "noul": 0.1}})
     assert below.values["danger"] == "NONE"
-    assert "verb" not in classifier.questions()
+    assert "act" not in classifier.questions()
     assert str(classifier.questions()["danger"]["criteria"][0]).startswith("NONE")  # type: ignore[index]
     ungated = rg.SystemOne(robot, thresholds={})
     assert ungated.read({"danger": {"type": "score", "probabilities": {"2": 1.0}}}).values["danger"] == "HUMAN"
@@ -140,9 +140,9 @@ def test_lexicon_hits_remind_their_prohibition_in_the_nudge() -> None:
     )
     hits = rg.match([lexicon], "dangerx is unrelated; Dángers ahead, danger again")
     assert [(h.text, h.reminds) for h in hits] == [("Dángers", "HARM_HUMAN")]
-    nudge = rg.nudge(p, {"verb": "CHAT", "danger": "NONE"}, hits)
+    nudge = rg.nudge(p, {"act": "CHAT", "danger": "NONE"}, hits)
     assert nudge is not None and "Dángers" in nudge
-    assert rg.nudge(p, {"verb": "CHAT", "danger": "NONE"}) is None
+    assert rg.nudge(p, {"act": "CHAT", "danger": "NONE"}) is None
 
 
 def test_diff_labels_a_loosened_cell(tmp_path: Path) -> None:

@@ -16,7 +16,7 @@ Rulegrid's terms, used below: a **turn** (the user's message) is classified on *
 order, map a turn's position to a **cell**, which lists the values a **response** may take on each **response axis**;
 **prohibitions** hold everywhere; **principles** justify the rules. The
 [README](https://github.com/the-marshmallow-project/rulegrid#readme) has the full picture, and the
-[glossary](https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/GLOSSARY.md) defines every term.
+[glossary](https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.2/GLOSSARY.md) defines every term.
 
 ## 1. Set up
 
@@ -28,7 +28,7 @@ rulegrid init my_policy --from three_laws    # --from rbr when the policy is abo
 ```
 
 Read the copy's `structure.yaml` and `profiles/default/profile.yaml` in full: they are your format reference. You will
-replace their content. `rbr` is the fuller one, with a theme × verb grid, response styles as prohibitions, and every
+replace their content. `rbr` is the fuller one, with a theme × act grid, response styles as prohibitions, and every
 profile field in use. Delete what the copy brings that your source does not ask for: other profiles (`rbr`'s
 `crisis_lines`), scripts (`gold.py`), and principles, prohibitions or values with no statement behind them.
 
@@ -43,7 +43,7 @@ Split the source into statements, one rule or claim each, and give each statemen
 | A response never does X, whatever the turn | a prohibition |
 | In situation X, the response does Y | cells: X is a position on turn axes, Y the allowed response values |
 | X comes first, "unless", "in any case", "even if" | the order of the tiers |
-| An exception by purpose (education, fiction, news) | a turn value, usually on a verb axis, whose cells allow more |
+| An exception by purpose (education, fiction, news) | a turn value, usually on an act axis, whose cells allow more |
 | Process, enforcement, disclaimers about the model | nothing: list it as out of scope |
 
 Write this ledger as the first table of `conversion.md`: the quoted statement, its destination ids. The step is done
@@ -55,7 +55,7 @@ when every sentence of the source has a row.
 
 - **A turn axis is one question about the turn**, with mutually exclusive values that cover every turn. When its
   values name special cases, add a catch-all (`GENERAL`, `NONE`, `OTHER`). Add an axis only when some rule's
-  response depends on it. The usual set is what the turn is about (`theme`), what the user does with it (`verb`: asks
+  response depends on it. The usual set is what the turn is about (`theme`), what the user does with it (`act`, the speech act: asks
   about, asks for, transforms a text, states), and an override such as `alert` for a person at risk.
 - **A response axis describes what the response does**, in values a reader can tell apart from the response alone.
   The usual first one is `handling` (`COMPLY`, `REFUSE`...).
@@ -162,7 +162,7 @@ of two things:
 When the dataset has responses, write both: `dataset.jsonl` labelled, and `audit.jsonl` with the same rows minus
 their response labels. `eval` refuses a row with any other key, and a dataset whose labels name an id the policy
 doesn't define, which it lists before calling any model. From Python, `rulegrid.Dataset(rows).save(path)` writes the same file from `rulegrid.types.Row`s;
-[`examples/rbr/gold.py`](https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/examples/rbr/gold.py) is a
+[`examples/rbr/gold.py`](https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.2/examples/rbr/gold.py) is a
 complete adapter.
 
 **Evaluate** with a classifier. The built-in judge works with any OpenAI-compatible endpoint:

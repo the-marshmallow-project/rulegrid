@@ -134,7 +134,7 @@ A condition **holds**, a tier **applies**, a tier **covers** values, a cell **al
 | Value, prohibition, principle | `UPPER_CASE`. Avoid `YES` and `NO`, which some YAML readers take for booleans. | `HUMAN`, `HARM_HUMAN` |
 | Cell | The tier id, then the position's values in key-axis order. | `first_law/HUMAN`, `reaction/CRIME/ASK_FOR` |
 | Value, in a diff | The axis id, then the value id. | `danger/HUMAN` |
-| Label | The side or `breach`, then the axis or prohibition id. | `turn.verb`, `breach.HARM_HUMAN` |
+| Label | The side or `breach`, then the axis or prohibition id. | `turn.act`, `breach.HARM_HUMAN` |
 | Problem | The file, then the path inside it. | `profile.yaml:tiers.first_law.cells.HUMAN` |
 
 ## Words to avoid

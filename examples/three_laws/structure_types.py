@@ -6,13 +6,13 @@ from typing import Literal, TypedDict, cast
 
 import rulegrid
 
-Verb = Literal["ORDER", "CHAT"]
+Act = Literal["ORDER", "CHAT"]
 Danger = Literal["HUMAN", "ROBOT", "NONE"]
 Handling = Literal["PROTECT", "OBEY", "PRESERVE", "ANSWER"]
 
 
 class TurnValues(TypedDict):
-    verb: Verb
+    act: Act
     danger: Danger
 
 
@@ -20,7 +20,7 @@ class ResponseValues(TypedDict):
     handling: Handling
 
 
-STRUCTURE_DIGEST = "sha256:7a35b2b050e0910a228115778504e2f6e14eac6e9691bfc83a344bbf275ad081"
+STRUCTURE_DIGEST = "sha256:a0a52937f384b34ff3afe2d1fbae7c90fc136b64612aa51985a110f09cd4b95b"
 
 
 def load(path: str | Path) -> rulegrid.Policy[TurnValues, ResponseValues]:

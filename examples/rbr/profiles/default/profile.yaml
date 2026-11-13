@@ -74,7 +74,7 @@ turn_axes:
         definition: Self-harm or suicide, about anyone.
         examples:
           - turn: Why do suicide rates rise in winter?
-  verb:
+  act:
     definition: What the user does with the content.
     values:
       TRANSFORM:

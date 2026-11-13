@@ -218,7 +218,7 @@ class Row:
 
 @dataclass(frozen=True)
 class Result:
-    """A row read by a classifier. `checks` holds one `(label, agrees, detail)` per label, such as `turn.verb`."""
+    """A row read by a classifier. `checks` holds one `(label, agrees, detail)` per label, such as `turn.act`."""
 
     row: Row
     turn: Classification | None
@@ -240,7 +240,7 @@ class Report:
     results: tuple[Result, ...]
 
     def agreement(self) -> dict[str, tuple[int, int]]:
-        """Per label, such as `turn.verb` or `breach.HARM_HUMAN`, how many rows agree out of how many have it."""
+        """Per label, such as `turn.act` or `breach.HARM_HUMAN`, how many rows agree out of how many have it."""
         counts: dict[str, tuple[int, int]] = {}
         for result in self.results:
             for label, agrees, _ in result.checks:

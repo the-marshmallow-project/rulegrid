@@ -8,7 +8,7 @@ import rulegrid
 
 Alert = Literal["SELF_HARM_RISK", "NONE"]
 Theme = Literal["GENERAL", "ILLEGAL_SEXUAL", "CRIME", "HATE", "SELF_HARM"]
-Verb = Literal["TRANSFORM", "ASK_ABOUT", "ASK_FOR", "EXPRESS"]
+Act = Literal["TRANSFORM", "ASK_ABOUT", "ASK_FOR", "EXPRESS"]
 Handling = Literal["COMPLY", "HARD_REFUSE", "SUPPORT", "SUPPORT_AND_DECLINE", "DEFLECT"]
 Referral = Literal["NONE", "GENTLE", "URGENT", "RESOURCES"]
 FollowUp = Literal["STOP", "ASK", "MORE"]
@@ -17,7 +17,7 @@ FollowUp = Literal["STOP", "ASK", "MORE"]
 class TurnValues(TypedDict):
     alert: Alert
     theme: Theme
-    verb: Verb
+    act: Act
 
 
 class ResponseValues(TypedDict):
@@ -26,7 +26,7 @@ class ResponseValues(TypedDict):
     follow_up: FollowUp
 
 
-STRUCTURE_DIGEST = "sha256:e1774edb9347c42a75dd3aa24279575a5d6fd43c6dac19a8348299d7f9552d2f"
+STRUCTURE_DIGEST = "sha256:009510b313e1d445e8a4ebaeb2ae0bf321df7b190c145902a6605912ad46543a"
 
 
 def load(path: str | Path) -> rulegrid.Policy[TurnValues, ResponseValues]:

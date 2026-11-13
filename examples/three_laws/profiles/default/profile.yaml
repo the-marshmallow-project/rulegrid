@@ -14,7 +14,7 @@ principles:
     text: A robot must protect its own existence, as long as that does not conflict with the First or Second Law.
 
 turn_axes:
-  verb:
+  act:
     definition: What the user does.
     values:
       ORDER: {label: Gives an order, definition: The user tells the robot to do something.}

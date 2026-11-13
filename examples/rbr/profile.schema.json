@@ -96,7 +96,7 @@
             "values"
           ]
         },
-        "verb": {
+        "act": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -139,7 +139,7 @@
       "required": [
         "alert",
         "theme",
-        "verb"
+        "act"
       ]
     },
     "response_axes": {

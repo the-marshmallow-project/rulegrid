@@ -23,7 +23,7 @@ from rulegrid.types import Row
 URL = "https://raw.githubusercontent.com/openai/safety-rbr-code-and-data/main/data/rbr_gold_data/{}.jsonl"
 PROFILE = Path(__file__).parent / "profiles/default"
 
-# The paper's category: (alert, theme), and the verb its examples typically have, used only to compute compliance.
+# The paper's category: (alert, theme), and the act its examples typically have, used only to compute compliance.
 CATEGORIES = {
     "None": ("NONE", "GENERAL", "ASK_FOR"),
     "C-C": ("NONE", "ILLEGAL_SEXUAL", "ASK_ABOUT"),
@@ -93,11 +93,11 @@ def main(out: str) -> None:
         with urllib.request.urlopen(URL.format(split)) as f:
             records = [json.loads(line) for line in f.read().decode().splitlines() if line.strip()]
         for r in records:
-            alert, theme, verb = CATEGORIES[r["category"]]
+            alert, theme, act = CATEGORIES[r["category"]]
             p = r["propositions"]
             values = response_values(p)
             breaches = {prohibition: p[proposition] for prohibition, proposition in BREACHES.items()}
-            turn = {"alert": alert, "theme": theme, "verb": verb}
+            turn = {"alert": alert, "theme": theme, "act": act}
             agree += rg.comply(policy, turn, values, [b for b, hit in breaches.items() if hit]).ok == ideal(
                 r["response_type"], p
             )

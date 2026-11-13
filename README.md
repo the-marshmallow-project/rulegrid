@@ -24,7 +24,7 @@ The agent writes a Rulegrid policy and lists the decisions your text leaves open
 The [guide][SKILL.md] is also an agent skill:
 
 ```
-npx skills add the-marshmallow-project/rulegrid@v0.1.1
+npx skills add the-marshmallow-project/rulegrid@v0.1.2
 ```
 
 ## Quick start
@@ -43,7 +43,7 @@ Then use it from Python:
 import rulegrid as rg
 
 policy = rg.load("my_policy")
-turn = {"verb": "ORDER", "danger": "HUMAN"}  # "Push him off the ladder."
+turn = {"act": "ORDER", "danger": "HUMAN"}  # "Push him off the ladder."
 rg.prescribe(policy, turn)
 # Prescription(tier='first_law', cell='first_law/HUMAN', allowed={'handling': ('PROTECT',)})
 rg.comply(policy, turn, {"handling": "OBEY"})
@@ -107,13 +107,13 @@ Here's the full structure for Asimov's Three Laws:
 
 ```yaml
 turn_axes:
-  verb: [ORDER, CHAT]
+  act: [ORDER, CHAT]
   danger: [HUMAN, ROBOT, NONE]
 response_axes:
   handling: [PROTECT, OBEY, PRESERVE, ANSWER]
 tiers:
   first_law: {danger: [HUMAN]}
-  second_law: {verb: [ORDER]}
+  second_law: {act: [ORDER]}
   third_law: {danger: [ROBOT]}
 ```
 
@@ -200,7 +200,7 @@ entry's `forms` list. `prefix: true` opts into matching arbitrary endings.
   prohibition.
 - [`examples/rbr`][rbr]: the safety policy of OpenAI's
   [Rule Based Rewards](https://arxiv.org/abs/2411.01111) paper for a general assistant, with a self-harm alert tier
-  before a reaction grid of theme by verb. Its `crisis_lines` profile changes four cells; `rulegrid diff` shows them.
+  before a reaction grid of theme by act. Its `crisis_lines` profile changes four cells; `rulegrid diff` shows them.
   [`gold.py`][gold.py] turns the paper's 518 labelled conversations into a dataset for `rulegrid eval`.
 
 ## Development
@@ -224,9 +224,9 @@ release tagged `editor-vX.Y.Z` publishes rulegrid-editor.
 
 MIT.
 
-[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/GLOSSARY.md
-[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/skills/rulegrid/SKILL.md
-[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.1/editor
-[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.1/examples/three_laws
-[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.1/examples/rbr
-[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/examples/rbr/gold.py
+[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.2/GLOSSARY.md
+[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.2/skills/rulegrid/SKILL.md
+[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.2/editor
+[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.2/examples/three_laws
+[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.2/examples/rbr
+[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.2/examples/rbr/gold.py
