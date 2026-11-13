@@ -49,7 +49,12 @@ rg.prescribe(policy, turn)
 # Prescription(tier='first_law', cell='first_law/HUMAN', allowed={'handling': ('PROTECT',)})
 rg.comply(policy, turn, {"handling": "OBEY"})
 # Compliance(ok=False, articles=(Article(kind='cell', id='first_law/HUMAN', detail='handling OBEY is not in [PROTECT]'),), ...)
+rg.comply(policy, turn, {"handling": "PROTECT"}, breaches=["HARM_HUMAN"]).ok
+# False
 ```
+
+Values alone never breach a prohibition: `comply` counts the breaches it is given, from a classifier's reading of the
+response or from `breaches=`.
 
 ## A policy is a structure and its profiles
 
@@ -120,7 +125,7 @@ example needs a `response`, except a turn value's. `rulegrid eval` without `--da
 | --- | --- |
 | `load`, `check`, `diff` | A profile and its structure, validated; static checks; what changed between two versions, each cell labelled tightened or loosened |
 | `prescribe`, `comply` | A turn to its prescription; a turn and a response to a `Compliance` that cites its articles |
-| `render` | The whole policy as text: `prompt` for the agent, `judge` for a grader, `document` for people |
+| `render` | The whole policy as text: `prompt` for the agent, `judge` for a grader, `document` for people. `prompt` is a section to append to the agent's own system prompt, so it leaves out the profile's `context` and the axes, which the nudge carries |
 | `nudge` | The note sent to the agent before it responds to one turn: its prescription and its reminders |
 | `Lexicon`, `match` | Word lists, and their hits in a text |
 | `SystemOne` | A classifier over any decision model speaking the System One API (TypeSafe, OpenRouter, Liquid...) |
@@ -141,8 +146,14 @@ for assessment in await judge.assess(conversation):
     print(assessment.compliance)
 ```
 
-A threshold, keyed by tier id, asks the decision model whether that tier applies. Thresholds have no defaults: they
-belong to the model's calibration. Pass `decide=` instead of an endpoint to bring your own HTTP client.
+A threshold, keyed by tier id, adds a yes/no question about that tier. From that probability up, the turn lands inside
+the tier's condition, and below it outside, whatever the axes' most probable values. It changes a result only when the
+question and the axes disagree: a lower threshold catches more turns in the tier, with more false alarms. A tier
+without a threshold is read from its axes alone. Good values depend on the model's calibration, so Rulegrid has no
+defaults: `SystemOne` requires `thresholds=`, `{}` for none, and the command line takes none unless given
+`--threshold TIER=P`. Likewise `breach=P` asks whether the response breaches each prohibition, counting it from that
+probability; `rulegrid eval --breach` defaults to 0.5. Pass `decide=` instead of an endpoint to bring your own HTTP
+client.
 
 Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an
 entry's `forms` list; Rulegrid does not infer plurals. `prefix: true` opts into matching arbitrary endings.
@@ -156,6 +167,7 @@ rulegrid generate POLICY                       # profile.schema.json and structu
 rulegrid render PROFILE [--rendering document|prompt|judge] [-o FILE]
 rulegrid diff OLD NEW                          # profiles, or PROFILE@REV for a git revision
 rulegrid eval PROFILE [--data FILE] --classifier systemone[:MODEL]|judge:MODEL|module:attr
+              [--threshold TIER=P]... [--breach P]  # SystemOne only
 ```
 
 PROFILE is a profile directory, such as `my_policy/profiles/default`, or its `profile.yaml`. A policy directory with a

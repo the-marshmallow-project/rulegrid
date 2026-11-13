@@ -25,7 +25,7 @@ The try panel classifies with `--classifier`, which reads its endpoint and key f
 
 ```bash
 export RULEGRID_SYSTEMONE_URL=https://openrouter.ai/api RULEGRID_SYSTEMONE_KEY=$OPENROUTER_API_KEY
-rulegrid-editor examples/rbr/profiles/default --classifier systemone:liquid/d1-ultra --threshold alert=0.2 --threshold reaction=0.5
+rulegrid-editor examples/rbr/profiles/default --classifier systemone:liquid/d1-ultra --threshold alert=0.2
 
 export RULEGRID_LLM_URL=https://openrouter.ai/api/v1 RULEGRID_LLM_KEY=$OPENROUTER_API_KEY
 rulegrid-editor examples/three_laws/profiles/default --classifier judge:openai/gpt-5-mini
