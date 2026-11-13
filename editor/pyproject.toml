@@ -10,7 +10,7 @@ authors = [
     { name = "Grégoire Lothe", email = "51675587+glothe@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
-dependencies = ["rulegrid @ git+https://github.com/the-marshmallow-project/rulegrid@31d62135db8f7fd5041ab4242dc27ba3612caf4e"]
+dependencies = ["rulegrid @ git+https://github.com/the-marshmallow-project/rulegrid"]
 
 [project.scripts]
 rulegrid-editor = "rulegrid_editor:main"
