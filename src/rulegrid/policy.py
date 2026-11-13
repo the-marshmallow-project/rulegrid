@@ -12,7 +12,7 @@ import keyword
 import subprocess
 import tempfile
 import weakref
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
@@ -283,6 +283,17 @@ class Policy(Generic[T, R]):
 
     def axis(self, axis_id: str) -> Axis:
         return self.turn_axes.get(axis_id) or self.response_axes[axis_id]
+
+    def unknown(self, side: Literal["turn", "response"], values: Mapping[str, Collection[str]]) -> list[str]:
+        """The axis and value ids in `values`, some value ids per axis, that the policy doesn't define on `side`."""
+        axes = self.turn_axes if side == "turn" else self.response_axes
+        problems = []
+        for axis_id, ids in values.items():
+            if axis_id not in axes:
+                problems.append(f"unknown {side} axis {axis_id}")
+                continue
+            problems += [f"{side}.{axis_id}: unknown value {v}" for v in ids if v not in axes[axis_id].ids]
+        return problems
 
 
 class PolicyError(ValueError):

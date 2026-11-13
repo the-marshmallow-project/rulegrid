@@ -103,7 +103,8 @@ the profile lacks. Fill that in until `rulegrid check my_policy` passes.
 | `Judge`, `openai_compatible` | A classifier over any chat LLM with structured output, which also assesses whole conversations |
 | `Dataset`, `evaluate`, `compare` | Labelled exchanges, a policy's own examples among them; a classifier's agreement with them; two versions side by side |
 
-`prescribe` and `comply` are pure. Rendering reads templates but calls no model. Everything that calls a model is
+`prescribe` and `comply` are pure, and raise `ValueError` on a missing axis or on an id the policy doesn't define,
+rather than answer for a turn it never described. Rendering reads templates but calls no model. Everything that calls a model is
 async and takes the model from you, with a stdlib default:
 
 ```python

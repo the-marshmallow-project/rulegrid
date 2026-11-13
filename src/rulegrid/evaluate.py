@@ -166,14 +166,27 @@ async def evaluate(policy: Policy, data: Iterable[Row], classifier: Classifier, 
 
     Rows with a response and no response labels are audited instead: their compliance is computed from the
     classifier's readings, which is how recorded conversations are checked.
+
+    Raises:
+        ValueError: before reading any row, when labels name an axis, a value or a prohibition the policy doesn't
+            define.
     """
+    rows = tuple(data)
+    problems = []
+    for i, row in enumerate(rows, 1):
+        unknown = policy.unknown("turn", {k: (v,) for k, v in row.turn_values.items()})
+        unknown += policy.unknown("response", row.response_values)
+        unknown += [f"unknown prohibition {p}" for p in row.breaches if p not in policy.prohibitions]
+        problems += [f"row {i} {row.source}".rstrip() + f": {u}" for u in unknown]
+    if problems:
+        raise ValueError("labels the policy doesn't define:\n" + "\n".join(problems))
     semaphore = asyncio.Semaphore(concurrency)
 
     async def one(row: Row) -> Result:
         async with semaphore:
             return await _read(policy, row, classifier)
 
-    return Report(policy.digest, tuple(await asyncio.gather(*map(one, data))))
+    return Report(policy.digest, tuple(await asyncio.gather(*map(one, rows))))
 
 
 async def compare(

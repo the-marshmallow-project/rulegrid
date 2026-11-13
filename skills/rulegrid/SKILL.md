@@ -158,9 +158,8 @@ of two things:
   complies, which is running the policy on recorded conversations. Turn labels are still checked.
 
 When the dataset has responses, write both: `dataset.jsonl` labelled, and `audit.jsonl` with the same rows minus
-their response labels. `eval` does not validate ids, so a mistyped one only shows up as a disagreement: have the
-adapter check every id it writes against the loaded policy (`rulegrid.load(profile).axis(axis_id).ids`,
-`.prohibitions`). From Python, `rulegrid.Dataset(rows).save(path)` writes the same file from `rulegrid.types.Row`s;
+their response labels. `eval` refuses a dataset whose labels name an id the policy doesn't define, and lists each
+before calling any model. From Python, `rulegrid.Dataset(rows).save(path)` writes the same file from `rulegrid.types.Row`s;
 [`examples/rbr/gold.py`](https://github.com/the-marshmallow-project/rulegrid/blob/main/examples/rbr/gold.py) is a
 complete adapter.
 

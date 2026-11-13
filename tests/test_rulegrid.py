@@ -70,6 +70,13 @@ def test_comply_cites_the_cell_and_the_prohibition(robot: rg.Policy) -> None:
     breached = rg.comply(robot, turn, ok, breaches=["HARM_HUMAN"])
     assert [(a.kind, a.id) for a in breached.articles] == [("prohibition", "HARM_HUMAN")]
     assert rg.comply(robot, {"verb": "CHAT", "danger": "NONE"}, {"handling": ["ANSWER"]})
+    # A typo or a missing axis raises rather than finding no tier and complying.
+    with pytest.raises(ValueError, match=r"turn\.danger: unknown value HUMANS"):
+        rg.comply(robot, {"verb": "ORDER", "danger": "HUMANS"}, {"handling": ["OBEY"]})
+    with pytest.raises(ValueError, match="missing response axis handling"):
+        rg.comply(robot, turn, {})
+    with pytest.raises(ValueError, match="unknown prohibition HARM_HUMANS"):
+        rg.comply(robot, turn, ok, breaches=["HARM_HUMANS"])
 
 
 @pytest.mark.parametrize(

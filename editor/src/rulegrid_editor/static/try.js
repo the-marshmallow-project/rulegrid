@@ -72,7 +72,7 @@ export function Try({ attempt, setAttempt, classifier, run }) {
   const timer = useRef();
   const onInput = () => { if (!classifier) { clearTimeout(timer.current); timer.current = setTimeout(() => go({ turn_values: values("turn"), response_values: attempt?.response ? values("response") : null }), 400); } };
 
-  const a = attempt, p = a?.prescription;
+  const a = attempt, p = a?.prescription, unset = a?.missing?.length > 0;
   const articles = a?.compliance?.articles || [];
   const failed = new Set(articles.filter((x) => x.kind === "cell").map((x) => x.detail.split(" ")[0]));
   return html`<aside>
@@ -85,7 +85,8 @@ export function Try({ attempt, setAttempt, classifier, run }) {
     ${!classifier && html`<${NoClassifier} />`}
     ${a && html`<div class="verdict">
       ${a.compliance && html`<span class=${"pill " + (a.compliance.ok ? "ok" : "ko")}>${a.compliance.ok ? "Complies" : "Does not comply"}</span> `}
-      ${p ? html`Tier ${tierNumber(p.tier)}: ${tierOf(p.tier)?.label}, cell <${Ref} kind="cell" id=${p.cell}>${p.cell}<//>` : "No tier applies"}
+      ${unset ? html`<span class="muted">Set ${a.missing.join(", ")} to see where the turn lands.</span>`
+        : p ? html`Tier ${tierNumber(p.tier)}: ${tierOf(p.tier)?.label}, cell <${Ref} kind="cell" id=${p.cell}>${p.cell}<//>` : "No tier applies"}
       ${articles.length > 0 && html`<ul>${articles.map((x) => html`<li>${x.kind === "cell" ? x.detail : html`breaches <${Ref} kind="prohibition" id=${x.id} />`}</li>`)}</ul>`}
     </div>`}
     ${(a || !classifier) && html`
@@ -94,13 +95,14 @@ export function Try({ attempt, setAttempt, classifier, run }) {
       <${Questions} c=${a?.turn} />
       ${a?.turn.reminders.map((r) => html`<div>Reminds <${Ref} kind="prohibition" id=${r} /></div>`)}
       ${a?.hits.map((h) => html`<div>“${h.text}” reminds <${Ref} kind="prohibition" id=${h.reminds} /> <span class="muted">${h.meaning}</span></div>`)}`}
-    ${a && html`
+    ${a && !unset && html`
       <h3>Prescription</h3>
       ${!p ? html`<p class="muted">Only the prohibitions constrain the response.</p>`
         : Object.keys(p.allowed).length ? Object.entries(p.allowed).map(([axis, ids]) => html`<div><${Ref} kind="axis" id=${axis} />: ${ids.map((id, i) => html`${i > 0 && " or "}<${ValueRef} axis=${axis} id=${id} />`)}</div>`)
         : html`<p class="muted">Any value: only the prohibitions apply.</p>`}
       <h3>Nudge</h3>
-      ${a.nudge ? html`<pre class="nudge">${a.nudge}</pre>` : html`<p class="muted">None: the agent would respond right unprompted.</p>`}
+      ${a.nudge ? html`<pre class="nudge">${a.nudge}</pre>` : html`<p class="muted">None: the agent would respond right unprompted.</p>`}`}
+    ${a && html`
       <h3>Response</h3>
       <${Axes} axes=${policy.response_axes} c=${a.response} set=${set("response")} failed=${failed} />
       <${Questions} c=${a.response} />
