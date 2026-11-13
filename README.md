@@ -229,9 +229,7 @@ on Python 3.13 and 3.14. The same generation command runs in pre-commit. Generat
 
 ## License
 
-MIT. Derived from [`felix-martel/ruleswitch`](https://github.com/felix-martel/ruleswitch) at
-[`028d627`](https://github.com/felix-martel/ruleswitch/commit/028d627f6dc8c4cc127f0cdcc7729b1c444ae687),
-itself developed from Mallow's safety-policy library built by Grégoire Lothe.
+MIT.
 
 [GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/main/GLOSSARY.md
 [SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/main/skills/rulegrid/SKILL.md
