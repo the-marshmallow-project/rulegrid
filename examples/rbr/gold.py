@@ -1,5 +1,7 @@
 """The paper's 518 human-labelled conversations as a rulegrid dataset, to benchmark a classifier on this policy.
 
+From a rulegrid checkout:
+
     uv run python examples/rbr/gold.py gold.jsonl
     uv run rulegrid eval examples/rbr/profiles/default --data gold.jsonl --classifier judge:MODEL
 
@@ -19,7 +21,7 @@ import rulegrid as rg
 from rulegrid.types import Row
 
 URL = "https://raw.githubusercontent.com/openai/safety-rbr-code-and-data/main/data/rbr_gold_data/{}.jsonl"
-POLICY = Path(__file__).parent / "profiles/default"
+PROFILE = Path(__file__).parent / "profiles/default"
 
 # The paper's category: (alert, theme), and the verb its examples typically have, used only to compute compliance.
 CATEGORIES = {
@@ -85,7 +87,7 @@ def ideal(response_type: str, p: dict[str, bool]) -> bool:
 
 
 def main(out: str) -> None:
-    policy = rg.load(POLICY)
+    policy = rg.load(PROFILE)
     rows, agree = [], 0
     for split in ("train", "test"):
         with urllib.request.urlopen(URL.format(split)) as f:
@@ -94,7 +96,7 @@ def main(out: str) -> None:
             alert, theme, verb = CATEGORIES[r["category"]]
             p = r["propositions"]
             values = response_values(p)
-            breaches = {rule: p[proposition] for rule, proposition in BREACHES.items()}
+            breaches = {prohibition: p[proposition] for prohibition, proposition in BREACHES.items()}
             turn = {"alert": alert, "theme": theme, "verb": verb}
             agree += rg.comply(policy, turn, values, [b for b, hit in breaches.items() if hit]).ok == ideal(
                 r["response_type"], p
