@@ -99,8 +99,8 @@ aside h3 { font-size: 12px; margin: 16px 0 4px; text-transform: uppercase; lette
 aside table { width: 100%; font-size: 13px; }
 aside th { width: 84px; }
 aside select { font: inherit; width: 100%; }
-.verdict { margin-top: 14px; font-size: 13px; }
-.verdict ul { margin: 4px 0 0; padding-left: 18px; color: #52525b; }
+.compliance { margin-top: 14px; font-size: 13px; }
+.compliance ul { margin: 4px 0 0; padding-left: 18px; color: #52525b; }
 .pill { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
 .pill.ok { color: var(--ok); background: var(--ok-bg); } .pill.ko { color: var(--ko); background: var(--ko-bg); }
 th.ko { color: var(--ko); }

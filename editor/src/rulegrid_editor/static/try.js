@@ -84,7 +84,7 @@ export function Try({ attempt, setAttempt, classifier, run }) {
     ${busy && html` <span class="muted">classifying…</span>`}
     ${error && html`<p class="error">${error}</p>`}
     ${!classifier && html`<${NoClassifier} />`}
-    ${a && html`<div class="verdict">
+    ${a && html`<div class="compliance">
       ${a.compliance && html`<span class=${"pill " + (a.compliance.ok ? "ok" : "ko")}>${a.compliance.ok ? "Complies" : "Does not comply"}</span> `}
       ${unset ? html`<span class="muted">Set ${a.missing.join(", ")} to see where the turn lands.</span>`
         : p ? html`Tier ${tierNumber(p.tier)}: ${tierOf(p.tier)?.label}, cell <${Ref} kind="cell" id=${p.cell}>${p.cell}<//>` : "No tier applies"}

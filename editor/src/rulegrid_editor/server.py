@@ -234,18 +234,18 @@ class Workspace:
             return await asyncio.gather(turn, read("response", request.get("response_values")))
 
         turn, response = asyncio.run(both())
-        # Values set by hand can leave axes unset: the page shows them, and a verdict once every axis is set.
+        # Values set by hand can leave axes unset: the page shows them, and the compliance once every axis is set.
         missing = [a for a in policy.turn_axes if a not in turn.values]
         complete = response is not None and all(a in response.values for a in policy.response_axes)
         with self.lock:
-            note = None if missing else nudge(policy, turn, hits)
+            text = None if missing else nudge(policy, turn, hits)
         prescription = None if missing else prescribe(policy, turn)
         return {
             "turn": _classification(turn),
             "missing": missing,
             "hits": [{"text": h.text, "meaning": h.entry.meaning, "reminds": h.reminds} for h in hits],
             "prescription": prescription and asdict(prescription),
-            "nudge": note,
+            "nudge": text,
             "response": response and _classification(response),
             "compliance": response and complete and not missing and asdict(comply(policy, turn, response)),
         }

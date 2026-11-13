@@ -78,13 +78,13 @@ export function Grid({ tier, pick, selected, attempt }) {
   const keys = Object.keys(tier.condition);
   const columns = product(keys.slice(1).map((k) => tier.condition[k]));
   const landed = attempt?.prescription?.cell;
-  const verdict = attempt?.compliance ? (attempt.compliance.ok ? " ok" : " ko") : "";
+  const outcome = attempt?.compliance ? (attempt.compliance.ok ? " ok" : " ko") : "";
   const corner = join(keys.map((k) => html`<${Ref} kind="axis" id=${k} />`), keys.length > 1 ? " \\ " : "");
   return html`<div class="table"><table class=${"grid" + (pick ? " pickable" : "")}>
     <tr><th>${corner}</th>${columns.map((c) => html`<th>${c.length ? join(c.map((v, j) => html`<${ValueRef} axis=${keys[j + 1]} id=${v} />`), " / ") : "allowed"}</th>`)}</tr>
     ${tier.condition[keys[0]].map((row) => html`<tr><th><${ValueRef} axis=${keys[0]} id=${row} /></th>${columns.map((c) => {
       const id = [tier.id, row, ...c].join("/");
-      const cls = "cell" + (id === selected ? " selected" : "") + (id === landed ? " landed" + verdict : "");
+      const cls = "cell" + (id === selected ? " selected" : "") + (id === landed ? " landed" + outcome : "");
       const onClick = pick && ((e) => { e.preventDefault(); pick(id); });
       return html`<td class=${cls} onClick=${onClick}><${Allowed} allowed=${tier.cells[id].allowed} /></td>`;
     })}</tr>`)}
