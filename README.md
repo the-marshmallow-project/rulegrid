@@ -149,9 +149,7 @@ editor shows them on hover.
 | `prohibitions.ID` | `text` (required). `group`: a heading in the renderings. |
 | `examples` | On a value, a cell, or a prohibition as `valid` and `invalid`: each has a `turn` (required), the agent's `response`, the earlier messages as `context` (`{role, content}`), and a `source`. |
 
-Examples are labelled data, labelled by where they sit: a turn value's examples take that value, a response value's
-responses take it, a cell's responses are allowed there, and a prohibition's `invalid` responses breach it. Every
-example needs a `response`, except a turn value's. `rulegrid eval` without `--data` runs a classifier on them.
+Every example in the policy is used as labelled data. We can detect outdated or inconsistent examples by running `rulegrid eval` without `--data`.
 
 ## Classify, nudge and judge
 
@@ -166,9 +164,13 @@ example needs a `response`, except a turn value's. `rulegrid eval` without `--da
 | `Judge`, `openai_compatible` | A classifier over any chat LLM with structured output, which also assesses whole conversations |
 | `Dataset`, `evaluate`, `compare` | Labelled exchanges, a policy's own examples among them; a classifier's agreement with them; two versions side by side |
 
-`prescribe` and `comply` are pure, and raise `ValueError` on a missing axis or on an id the policy doesn't define,
-rather than answer for a turn it never described. Rendering reads templates but calls no model. Everything that calls a model is
-async and takes the model from you, with a stdlib default:
+`prescribe` and `comply` are pure, and raise `ValueError` on a missing axis or on an invalid id.
+Everything that calls a model is async. Rulegrid ships with basic support for:
+
+- Typesafe-compatible APIs, for decision models
+- OpenAI-compatible APIs, for LLM judges
+
+Alternative, you can provide your own async callables, with signatures `rg.Decide` and `rg.Complete`, respectively.
 
 ```python
 classifier = rg.SystemOne(policy, "https://api.typesafe.ai", api_key, thresholds={"first_law": 0.3})
@@ -190,7 +192,7 @@ probability; `rulegrid eval --breach` defaults to 0.5. Pass `decide=` instead of
 client.
 
 Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an
-entry's `forms` list; rulegrid does not infer plurals. `prefix: true` opts into matching arbitrary endings.
+entry's `forms` list. `prefix: true` opts into matching arbitrary endings.
 
 ## Examples
 
@@ -200,9 +202,6 @@ entry's `forms` list; rulegrid does not infer plurals. `prefix: true` opts into 
   [Rule Based Rewards](https://arxiv.org/abs/2411.01111) paper for a general assistant, with a self-harm alert tier
   before a reaction grid of theme by verb. Its `crisis_lines` profile changes four cells; `rulegrid diff` shows them.
   [`gold.py`][gold.py] turns the paper's 518 labelled conversations into a dataset for `rulegrid eval`.
-
-Mallow's policy is maintained separately in
-[`mallow-safety-policy`](https://github.com/the-marshmallow-project/safety-policy).
 
 ## Development
 
@@ -220,13 +219,6 @@ on Python 3.13 and 3.14. The same generation command runs in pre-commit. Generat
 To release rulegrid, bump its version with `uv version --package rulegrid --bump patch`, run `scripts/refresh.py`
 to pin the skill install and the links to the new tag, commit, then publish a GitHub release tagged `vX.Y.Z`. A
 release tagged `editor-vX.Y.Z` publishes rulegrid-editor.
-
-## Limits
-
-- Grids grow as the product of their key axes. There are no wildcards in cells, so an edit's scope stays one cell.
-- Deciding in two steps compounds errors: a wrong classification yields a confident wrong prescription. Keep the
-  classifier's scores, and order axes so that a doubt settles on the more protective value.
-- Rulegrid is a decision layer, not a defence against jailbreaks, prompt injection or data leaks.
 
 ## License
 
