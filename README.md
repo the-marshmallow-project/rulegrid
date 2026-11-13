@@ -19,7 +19,7 @@ have one, a labelled dataset:
 
 ```text
 Convert my behavior policy to rulegrid by following
-https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/v0.1.0/skills/rulegrid/SKILL.md
+https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/v0.1.1/skills/rulegrid/SKILL.md
 
 My policy: <paste the text, or give its path or URL>
 My labelled dataset (optional): <its path, and what its labels mean>
@@ -27,7 +27,7 @@ My labelled dataset (optional): <its path, and what its labels mean>
 
 The agent writes `structure.yaml` and a profile, lists the decisions your text leaves open, and, given a dataset,
 writes an adapter and runs `rulegrid eval` on it. The [guide][SKILL.md] is also an agent skill:
-`npx skills add the-marshmallow-project/rulegrid@v0.1.0` installs it.
+`npx skills add the-marshmallow-project/rulegrid@v0.1.1` installs it.
 
 ## Quick start
 
@@ -235,9 +235,9 @@ release tagged `editor-vX.Y.Z` publishes rulegrid-editor.
 
 MIT.
 
-[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.0/GLOSSARY.md
-[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.0/skills/rulegrid/SKILL.md
-[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.0/editor
-[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.0/examples/three_laws
-[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.0/examples/rbr
-[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.0/examples/rbr/gold.py
+[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/GLOSSARY.md
+[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/skills/rulegrid/SKILL.md
+[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.1/editor
+[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.1/examples/three_laws
+[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.1.1/examples/rbr
+[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.1.1/examples/rbr/gold.py

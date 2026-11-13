@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/v0.1.0/src/rulegrid/schemas/structure.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/v0.1.1/src/rulegrid/schemas/structure.schema.json
 # Asimov's Three Laws of Robotics (1942), as a rulegrid policy. Each law's "unless" is the order of the tiers.
 turn_axes:
   verb: [ORDER, CHAT]                # does the user give the robot an order?
