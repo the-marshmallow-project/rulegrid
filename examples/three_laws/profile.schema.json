@@ -309,7 +309,7 @@
             }
           ],
           "default": null,
-          "description": "The agent's reply. Needed everywhere except in a turn value's examples.",
+          "description": "The agent's response. Needed everywhere except in a turn value's examples.",
           "title": "Response"
         },
         "source": {
@@ -334,6 +334,7 @@
     },
     "MessageFile": {
       "additionalProperties": false,
+      "description": "A message before an example's turn.",
       "properties": {
         "role": {
           "enum": [
@@ -365,6 +366,7 @@
           "type": "string"
         },
         "text": {
+          "description": "The principle, as the agent and the judge read it.",
           "title": "Text",
           "type": "string"
         }

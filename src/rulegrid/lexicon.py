@@ -73,7 +73,7 @@ def match(
 ) -> list[Hit]:
     """The lexicon entries found in `text`, in order of first appearance, each entry once.
 
-    A phrase wins over a word it overlaps: "cul terreux" is not also "cul".
+    A phrase wins over a word it overlaps: "hot dog" is not also "dog".
 
     Args:
         lexicons: the word lists, such as `policy.lexicons`.

@@ -29,7 +29,7 @@ type Conversation = Sequence[Message | Mapping[str, str]]
 
 @dataclass(frozen=True)
 class Breach:
-    """A prohibition a response breaks: its id, and the words that break it, with how."""
+    """A prohibition a response breaches: its id, the words that breach it (`quote`), and how (`why`)."""
 
     prohibition: str
     quote: str = ""
@@ -42,7 +42,7 @@ class Classification[V: Mapping[str, object] = Values]:
 
     `values` maps each axis id to a value id, or to a frozenset of them on a multi-valued axis. `scores` holds what the
     classifier answered, for the caller to log. `evidence` maps an axis id to the words it rests on. `reminders` are,
-    for a turn, the prohibitions it invites the response to breach; `breaches`, for a response, the ones it breaks.
+    for a turn, the prohibitions it invites the response to breach; `breaches`, for a response, the ones it breaches.
     """
 
     values: V
@@ -56,7 +56,7 @@ class Classification[V: Mapping[str, object] = Values]:
 class Prescription:
     """What a tier allows a response to a turn: per response axis, the allowed values, in the axis's order.
 
-    An axis absent from `allowed` allows any value. `cell` is the position id, such as `alert/SEVERE/SHARE`.
+    An axis absent from `allowed` allows any value. `cell` is the cell id, such as `first_law/HUMAN`.
     """
 
     tier: str
@@ -66,7 +66,10 @@ class Prescription:
 
 @dataclass(frozen=True)
 class Article:
-    """A rule that decides a compliance: a cell, by its position id, or a prohibition, by its id."""
+    """An article of the policy that decides a compliance: a cell, by its cell id, or a prohibition, by its id.
+
+    `detail` says, for a cell, which value the response takes that the cell doesn't allow.
+    """
 
     kind: Literal["cell", "prohibition"]
     id: str
@@ -107,7 +110,10 @@ class Problem:
 
 @dataclass(frozen=True)
 class Assessment:
-    """One exchange judged against the policy. `prescription` and `compliance` are computed, never asked."""
+    """A judge's reading of one exchange, by its index in the conversation.
+
+    `prescription` and `compliance` are computed from the two classifications, never asked of the judge.
+    """
 
     exchange: int
     turn: Classification
@@ -125,17 +131,22 @@ class Classifier(Protocol):
     ) -> Classification: ...
 
 
-# System One, the API decision models share: POST {model, state, questions} -> {answers}.
+# The System One API: POST {model, state, questions} -> {answers}.
 type State = str | Mapping[str, Any] | Sequence[Any]
+"""What a System One model is asked about, as JSON."""
 
 
 class Question(TypedDict):
+    """A System One question: yes or no (`noul`), one of several `choice`s, or a `score` on a scale."""
+
     type: Literal["noul", "choice", "score"]
     instructions: str
     criteria: NotRequired[Mapping[str, Any] | Sequence[str]]
 
 
 class Answer(TypedDict):
+    """A System One answer: the probability of yes (`noul`), or the `choice` or `score` with its `probabilities`."""
+
     type: Literal["noul", "choice", "score"]
     noul: NotRequired[float]
     choice: NotRequired[str]
@@ -194,7 +205,7 @@ class Row:
 
     `turn_values` labels some turn axes. `response_values` lists, per response axis, the values the response may
     take: one for an exact label, several for a cell's allowed values. `breaches` says, per prohibition, whether the
-    response breaks it. A row with a response and no response labels is audited: its compliance is computed.
+    response breaches it. A row with a response and no response labels is audited: its compliance is computed.
     """
 
     conversation: tuple[Message, ...]
@@ -229,7 +240,7 @@ class Report:
     results: tuple[Result, ...]
 
     def agreement(self) -> dict[str, tuple[int, int]]:
-        """Per label, such as `turn.verb` or `breach.CLAIM_REAL`, how many rows agree out of how many have it."""
+        """Per label, such as `turn.verb` or `breach.HARM_HUMAN`, how many rows agree out of how many have it."""
         counts: dict[str, tuple[int, int]] = {}
         for result in self.results:
             for label, agrees, _ in result.checks:
@@ -249,6 +260,8 @@ class Report:
         return dict(sorted(counts.items()))
 
     def markdown(self) -> str:
+        """The report as Markdown: agreement per label, compliance per cell, each disagreement, each breach."""
+
         def table(head: str, counts: dict[str, tuple[int, int]]) -> list[str]:
             ok, total = sum(c[0] for c in counts.values()), sum(c[1] for c in counts.values())
             rows = [*counts.items(), ("**All**", (ok, total))]

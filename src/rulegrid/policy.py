@@ -74,6 +74,8 @@ class StructureFile(_File):
 
 
 class MessageFile(_File):
+    """A message before an example's turn."""
+
     role: Literal["user", "assistant"]
     content: str
 
@@ -84,7 +86,7 @@ class ExampleFile(_File):
     context: list[MessageFile] = Field([], description="The messages before the turn.")
     turn: str = Field(description="The user's message.")
     response: str | None = Field(
-        None, description="The agent's reply. Needed everywhere except in a turn value's examples."
+        None, description="The agent's response. Needed everywhere except in a turn value's examples."
     )
     source: str | None = Field(None, description="Where the example comes from, such as a section of a source text.")
 
@@ -109,12 +111,16 @@ class ValueFile(_File):
 
 
 class AxisFile(_File):
+    """An axis in a profile: the question it asks, and the texts of every value the structure lists."""
+
     definition: str = Field(description="The question the axis answers about a turn or a response.")
     guidance: str | None = Field(None, description="Response axes: advice to the agent, added to the nudge.")
     values: dict[str, ValueFile] = Field(description="Every value the structure lists, by id.")
 
 
 class TierFile(_File):
+    """A tier in a profile: its texts, and its grid of cells."""
+
     label: str = Field(description="A short name for people.")
     definition: str = Field(description="When the tier applies, for the classifier and the judge.")
     instruction: str = Field(description="What the agent does then, for the agent.")
@@ -137,10 +143,12 @@ class PrincipleFile(_File):
     """Why the rules are what they are, and what guides the agent where no rule applies."""
 
     label: str = Field(description="A short name for people.")
-    text: str
+    text: str = Field(description="The principle, as the agent and the judge read it.")
 
 
 class ProfileFile(_File):
+    """`profile.yaml`: the content of a policy, for the axes, values and tiers its structure lists."""
+
     structure: str = Field(f"../../{STRUCTURE}", description="The structure file, relative to this profile.")
     context: str | None = Field(
         None,
@@ -155,6 +163,8 @@ class ProfileFile(_File):
 
 
 class LexiconFile(_File):
+    """`lexicons/NAME.yaml`: the prohibition its hits remind, and its entries."""
+
     reminds: str
     entries: list[dict[str, Any]]
 
@@ -172,12 +182,15 @@ class Example:
     source: str | None = None
 
     def conversation(self, with_response: bool = False) -> list[Message]:
+        """The messages up to the turn, followed by the response when asked and there is one."""
         turn = [*self.context, Message("user", self.turn)]
         return [*turn, Message("assistant", self.response)] if with_response and self.response is not None else turn
 
 
 @dataclass(frozen=True)
 class Value:
+    """A value of an axis, with the texts a classifier tells it apart by."""
+
     id: str
     label: str
     definition: str
@@ -191,6 +204,8 @@ class Value:
 
 @dataclass(frozen=True)
 class Axis:
+    """A turn or response axis: the question it asks, and its values in the structure's order."""
+
     id: str
     side: Literal["turn", "response"]
     definition: str
@@ -229,6 +244,7 @@ class Tier:
     cells: Mapping[tuple[str, ...], Cell]
 
     def covers(self, values: Mapping[str, object]) -> bool:
+        """Whether the condition holds for a turn's values."""
         return all(values.get(axis) in covered for axis, covered in self.condition.items())
 
     def cell(self, values: Mapping[str, object]) -> Cell | None:
@@ -240,6 +256,8 @@ class Tier:
 
 @dataclass(frozen=True)
 class Prohibition:
+    """Something no response ever does, with example responses that don't breach it (`valid`) or do (`invalid`)."""
+
     id: str
     text: str
     group: str | None = None
@@ -249,6 +267,8 @@ class Prohibition:
 
 @dataclass(frozen=True)
 class Principle:
+    """A statement the rules derive from, which guides the agent where no rule applies."""
+
     id: str
     label: str
     text: str
@@ -298,6 +318,7 @@ class Policy(Generic[T, R]):
 
     @property
     def root(self) -> Path:
+        """The policy directory."""
         return self.structure.root
 
     @property
@@ -305,6 +326,7 @@ class Policy(Generic[T, R]):
         return self.structure.digest
 
     def axis(self, axis_id: str) -> Axis:
+        """The turn or response axis with this id."""
         return self.turn_axes.get(axis_id) or self.response_axes[axis_id]
 
     def unknown(self, side: Literal["turn", "response"], values: Mapping[str, Collection[str]]) -> list[str]:

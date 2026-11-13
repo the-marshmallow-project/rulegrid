@@ -1,7 +1,7 @@
 """From a turn's classification to a prescription, and from a response's to its compliance. No model, no I/O.
 
 Both refuse values the policy doesn't define, and a turn or response missing an axis: a typo or a classifier bug
-raises instead of returning a confident verdict.
+raises instead of returning a prescription or a compliance that looks sound.
 """
 
 from __future__ import annotations

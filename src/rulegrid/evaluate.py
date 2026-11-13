@@ -40,11 +40,12 @@ class Dataset:
         return Dataset(self.rows + other.rows)
 
     def where(self, **values: str) -> Dataset:
-        """The rows whose turn is labelled with these values, such as `where(alert="SEVERE")`."""
+        """The rows whose turn is labelled with these values, such as `where(danger="HUMAN")`."""
         return Dataset(tuple(r for r in self.rows if all(r.turn_values.get(k) == v for k, v in values.items())))
 
     @classmethod
     def load(cls, path: str | Path) -> Dataset:
+        """Read a JSONL file, one row per line."""
         rows = []
         for line in Path(path).read_text().splitlines():
             if not line.strip():
@@ -66,6 +67,7 @@ class Dataset:
         return cls(tuple(rows))
 
     def save(self, path: str | Path) -> None:
+        """Write the rows as JSONL, leaving out the keys a row doesn't set."""
         lines = []
         for r in self.rows:
             d: dict[str, Any] = {"messages": [{"role": m.role, "content": m.content} for m in r.conversation]}
@@ -84,7 +86,7 @@ class Dataset:
 
     @classmethod
     def from_policy(cls, policy: Policy) -> Dataset:
-        """The policy's examples, each labelled by its position.
+        """The policy's examples, each labelled by where it sits.
 
         A turn value's examples label that axis; a response value's, that axis of the response. A cell's examples
         label the turn's grid position and the values the response may take, and breach no prohibition, nor do a

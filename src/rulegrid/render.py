@@ -1,7 +1,7 @@
 """The policy as text: three renderings of the whole policy, and the nudge for one turn.
 
-Each is a Jinja template. The lib ships neutral English defaults in `rulegrid/templates/`; a file of the same name in
-the policy's `templates/` folder, next to `structure.yaml`, overrides one.
+Each is a Jinja template. The defaults, in `rulegrid/templates/`, are neutral English; a file of the same name in the
+policy's `templates/` folder, next to `structure.yaml`, overrides one.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ def render(policy: Policy, rendering: Rendering) -> str:
     """The whole policy as text for one audience.
 
     - `prompt`: the agent's system-prompt section: principles, how turns are read, prohibitions.
-    - `judge`: the whole policy with its ids, for a reader that grades responses.
+    - `judge`: the whole policy with its ids, for a judge.
     - `document`: Markdown for people.
     """
     return template(policy, f"{rendering}.j2")
