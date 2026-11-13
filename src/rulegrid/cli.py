@@ -73,6 +73,7 @@ def classifier(
     if kind == "judge":
         url, key = os.environ["RULEGRID_LLM_URL"], os.environ["RULEGRID_LLM_KEY"]
         return lambda p: Judge(p, openai_compatible(url, key, model))
+    sys.path.insert(0, os.getcwd())  # a module beside the caller's files, as `python -m` would find it
     return getattr(importlib.import_module(kind), model)
 
 
