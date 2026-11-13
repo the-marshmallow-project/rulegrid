@@ -23,7 +23,7 @@ order, map a turn's position to a **cell**, which lists the values a **response*
 Rulegrid needs Python 3.13 or later.
 
 ```bash
-uv pip install git+https://github.com/the-marshmallow-project/rulegrid   # or uv add, in a project
+uv pip install rulegrid   # or uv add rulegrid, in a project
 rulegrid init my_policy --from three_laws    # --from rbr when the policy is about harmful requests to an assistant
 ```
 

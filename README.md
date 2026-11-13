@@ -9,7 +9,7 @@ that people can review, and that compliance can be computed from rather than ask
 3. A **response** **complies** when its values are allowed and it breaches no **prohibition**. A non-compliant result
    cites the cell or prohibition that decides it.
 
-**Principles** justify the rules and guide the agent where no rule applies. The [glossary](GLOSSARY.md) defines every
+**Principles** justify the rules and guide the agent where no rule applies. The [glossary][GLOSSARY.md] defines every
 term and the form of every id.
 
 ## Start with your coding agent
@@ -26,7 +26,7 @@ My labelled dataset (optional): <its path, and what its labels mean>
 ```
 
 The agent writes `structure.yaml` and a profile, lists the decisions your text leaves open, and, given a dataset,
-writes an adapter and runs `rulegrid eval` on it. The [guide](skills/rulegrid/SKILL.md) is also an agent skill:
+writes an adapter and runs `rulegrid eval` on it. The [guide][SKILL.md] is also an agent skill:
 `npx skills add the-marshmallow-project/rulegrid` installs it.
 
 ## Quick start
@@ -34,7 +34,7 @@ writes an adapter and runs `rulegrid eval` on it. The [guide](skills/rulegrid/SK
 Rulegrid needs Python 3.13 or later. Its Python shorthand is `rg`; the executable is `rulegrid`, leaving `rg` to ripgrep.
 
 ```bash
-uv pip install git+https://github.com/the-marshmallow-project/rulegrid
+uv pip install rulegrid
 rulegrid init my_policy    # a copy of Asimov's Three Laws; --from rbr for a fuller policy
 rulegrid check my_policy   # what is missing or inconsistent
 ```
@@ -187,7 +187,7 @@ rulegrid eval examples/three_laws/profiles/default --classifier judge:openai/gpt
 `eval` without `--data` runs the classifier on the policy's own examples, each labelled by where it sits: it checks
 that the policy's texts draw the lines its examples draw.
 
-The [browser editor](editor/README.md) is a separate package, with vendored Preact + htm and no frontend build step:
+The [browser editor][editor] is a separate package, with vendored Preact + htm and no frontend build step:
 
 ```bash
 uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor PROFILE
@@ -197,12 +197,12 @@ The core has no `serve` command or web dependencies.
 
 ## Examples
 
-- [`examples/three_laws`](examples/three_laws): the smallest policy that shows tiers, cells, principles and a
+- [`examples/three_laws`][three_laws]: the smallest policy that shows tiers, cells, principles and a
   prohibition.
-- [`examples/rbr`](examples/rbr): the safety policy of OpenAI's
+- [`examples/rbr`][rbr]: the safety policy of OpenAI's
   [Rule Based Rewards](https://arxiv.org/abs/2411.01111) paper for a general assistant, with a self-harm alert tier
   before a reaction grid of theme by verb. Its `crisis_lines` profile changes four cells; `rulegrid diff` shows them.
-  [`gold.py`](examples/rbr/gold.py) turns the paper's 518 labelled conversations into a dataset for `rulegrid eval`.
+  [`gold.py`][gold.py] turns the paper's 518 labelled conversations into a dataset for `rulegrid eval`.
 
 Mallow's policy is maintained separately in
 [`mallow-safety-policy`](https://github.com/the-marshmallow-project/safety-policy).
@@ -232,3 +232,10 @@ on Python 3.13 and 3.14. The same generation command runs in pre-commit. Generat
 MIT. Derived from [`felix-martel/ruleswitch`](https://github.com/felix-martel/ruleswitch) at
 [`028d627`](https://github.com/felix-martel/ruleswitch/commit/028d627f6dc8c4cc127f0cdcc7729b1c444ae687),
 itself developed from Mallow's safety-policy library built by Grégoire Lothe.
+
+[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/main/GLOSSARY.md
+[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/main/skills/rulegrid/SKILL.md
+[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/main/editor
+[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/main/examples/three_laws
+[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/main/examples/rbr
+[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/main/examples/rbr/gold.py
