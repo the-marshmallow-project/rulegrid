@@ -24,7 +24,7 @@ The agent writes a Rulegrid policy and lists the decisions your text leaves open
 The [guide][SKILL.md] is also an agent skill:
 
 ```
-npx skills add the-marshmallow-project/rulegrid
+npx skills add the-marshmallow-project/rulegrid@v0.1.1
 ```
 
 ## Quick start
