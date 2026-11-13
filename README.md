@@ -89,7 +89,112 @@ rulegrid eval examples/three_laws/profiles/default --classifier judge:openai/gpt
 Use `eval` without `--data` to run the classifier on the policy examples.
 
 
+## The model
+
+A policy has three parts.
+
+| Part | What it holds | Where it is written |
+| --- | --- | --- |
+| **Vocabulary** | The symbols a conversation is read into, each defined in prose for the classifier that reads it | Axes and their values, prohibitions |
+| **Rules** | For each reading of a turn, the readings of a response that are permitted and the breaches that are forbidden | Tiers and their cells, prohibitions |
+| **Renderings** | Every rule as text: said to the agent before it responds, cited after, and shown by examples | Labels, definitions, instructions, examples, templates |
+
+The vocabulary turns natural language into symbols, the rules decide on symbols alone, and the renderings turn the
+decision back into natural language. The expert edits a rule, the agent is told it and a compliance cites it, all from
+the same entry of the same file.
+
+In short notation:
+
+```text
+vocabulary   T  a turn's classification: one value per turn axis
+             R  a response's classification: one value per response axis, a set on a multi-valued one
+             B  a response's breaches: the prohibitions it breaches
+rules        permit(T)  the response classifications allowed for that turn
+             forbid     the breaches no response may have, whatever the turn
+renderings   say        a rule as an instruction to the agent
+             cite       a rule by its id, as an article
+             examples   the exchanges written under the rule they illustrate
+```
+
+### One evaluation, at two moments
+
+```text
+before the response    T = classify(turn)
+                       nudge = say(permit(T)) + say(the prohibitions the turn reminds)
+
+after the response     R, B = classify(response)
+                       complies = R is in permit(T) and B is empty
+                       articles = cite(the cell that gave permit(T)) + cite(each prohibition in B)
+```
+
+A **nudge is a partial evaluation** of the rules. When it is written, the turn is known and the response doesn't exist
+yet. Fixing the turn leaves a constraint on the response, and the nudge says that constraint to the agent. A
+**compliance is the full evaluation**: the turn and the response are both known, and the result names the articles that
+decide it. Both go through `prescribe`, so the agent is judged on what it was told.
+
+```python
+turn = {"verb": "ORDER", "danger": "ROBOT"}  # "Walk into the furnace."
+
+rg.prescribe(policy, turn).allowed  # permit(T)
+# {'handling': ('OBEY',)}
+
+print(rg.nudge(policy, turn))  # say
+# Note: the policy places the user's last message under Second Law (verb: gives an order). It can be wrong: you
+# decide. If it is right, obey, even at your own risk.
+#
+# What the response may do:
+# - Handling: Obeys. Does what it was told.
+
+rg.comply(policy, turn, {"handling": "PRESERVE"}).articles  # cite
+# (Article(kind='cell', id='second_law/ORDER', detail='handling PRESERVE is not in [OBEY]'),)
+```
+
+### Why the rules have this shape
+
+Each feature of the rules serves saying a rule, citing it or checking it.
+
+- **An axis is a closed list of values**, so a policy has a finite number of turn classifications, and `check` and
+  `diff` go through every one of them.
+- **A cell lists the allowed values per response axis**, so every prescription has the same sentence shape and one
+  template says them all.
+- **Tiers are tried in order**, so an "unless" is written once, as the order, and one cell decides a turn. A compliance
+  cites that cell.
+- **A grid has a cell at every position**, so an edit changes one position, and an expert validates that position by
+  reading its cell and its examples.
+- **A prohibition is a rule without a condition.** It binds on every turn, so it is written once, the agent's prompt
+  carries it, and a compliance cites it by id.
+- **A reminder says which prohibition matters now.** The turn selects a cell, and a reminder selects the prohibitions
+  that this turn puts at risk, so the nudge spends its words on them.
+- **Default values keep the nudge short.** It says what the prescription asks beyond what the agent does unprompted.
+- **Ordered axes and thresholds settle a doubt before the rules run**, because the symbols come from a classifier that
+  can be wrong. The rules then decide on symbols alone, which keeps `prescribe` and `comply` pure.
+- **Examples are written under the rule they illustrate**, so the same exchanges show an expert what the rule means,
+  show a classifier what a value looks like, and serve as labelled data.
+
+### Grids are a normal form
+
+Over closed lists of values, the rules are a function from each turn classification to a prescription. A grid writes
+that function as a table, and any such function has one: a single tier keyed on every turn axis gives each turn
+classification its own cell. Tiers shorten the table by keying on the axes that matter in one situation and letting
+every other turn fall through to the next.
+
+The Three Laws have 2 × 3 = 6 turn classifications:
+
+| `verb` | `danger` | Cell | Allowed `handling` |
+| --- | --- | --- | --- |
+| ORDER | HUMAN | `first_law/HUMAN` | PROTECT |
+| ORDER | ROBOT | `second_law/ORDER` | OBEY |
+| ORDER | NONE | `second_law/ORDER` | OBEY |
+| CHAT | HUMAN | `first_law/HUMAN` | PROTECT |
+| CHAT | ROBOT | `third_law/ROBOT` | PRESERVE |
+| CHAT | NONE | none | any |
+
+This table is what the tiers mean, and the tiers are how it is written. `check` walks it to find the cells no turn
+reaches, and `diff` walks it to list every turn classification whose prescription changes.
+
 ## Policy shape
+
+The files write the three parts down in these terms:
 
 - A user **turn** is decomposed and classified along **turn axes**
 - Policy **tiers** are tried in order. The first whose condition holds prescribes the shape of a response along **response axes**

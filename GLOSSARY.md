@@ -11,6 +11,28 @@ A **policy** governs how an **agent** responds to a **user**. The user's **turn*
 classification fits that **prescription** and it **breaches** no **prohibition**. **Principles** justify the rules and
 guide the agent where no rule applies.
 
+## The model in three parts
+
+A policy's **vocabulary** is its axes, their values and its prohibitions: the symbols a conversation is classified
+into. Its **rules** are its cells and its prohibitions: for each turn's classification, what a response may be. Its
+**renderings** are the rules as text: said to the agent before it responds, cited after, and illustrated by examples.
+
+A nudge evaluates the rules on the turn alone, before the response exists, and says what they leave open to the
+response. A compliance evaluates them on the turn and the response, and cites the rules that decide.
+
+The docs write the model in this notation. Each sign stands for a term below:
+
+| Sign | Stands for |
+| --- | --- |
+| `T` | A turn's classification. |
+| `R` | A response's classification. |
+| `B` | A response's breaches. |
+| `permit(T)` | The prescription for that turn: the allowed values, any value when no tier applies. |
+| `forbid` | The prohibitions. |
+| `say` | A rule as text for the agent: the nudge for one turn, the `prompt` rendering for the whole policy. |
+| `cite` | A rule as an article. |
+| `examples` | The examples written under a value, a cell or a prohibition. |
+
 ## Nouns
 
 ### A policy and its files
@@ -42,6 +64,7 @@ guide the agent where no rule applies.
 
 | Term | Definition | In code and files |
 | --- | --- | --- |
+| **Vocabulary** | Everything a classifier answers for: the axes with their values, and the prohibitions, each with its definition in prose. | `turn_axes`, `response_axes`, `prohibitions` |
 | **Axis** | One question about a turn (**turn axis**) or about a response (**response axis**), with a closed list of values. The two **sides** are named after what is classified, not after who speaks. | `turn_axes`, `response_axes`, `Axis.side` |
 | **Value** | One answer on an axis, with a label and a definition written against the axis's other values. | `values` |
 | **Ordered axis** | An axis whose value order carries meaning: a doubt between two values settles on the earlier. | `ordered: true` |
@@ -74,7 +97,7 @@ guide the agent where no rule applies.
 
 | Term | Definition | In code and files |
 | --- | --- | --- |
-| **Rendering** | The whole policy as text for one audience: `prompt` for the agent, `judge` for a judge, `document` for people. | `render`, `templates/*.j2` |
+| **Rendering** | The policy as text for one audience. `render` gives the whole policy: `prompt` for the agent, `judge` for a judge, `document` for people. The nudge renders one turn's prescription. | `render`, `nudge`, `templates/*.j2` |
 | **Nudge** | Text sent to the agent just before it responds to one turn: the turn's prescription and its reminders. None when the agent would respond right unprompted. | `nudge` |
 | **Reminder** | A prohibition that a turn invites the response to breach. It comes from a classifier or from a lexicon hit. | `Classification.reminders`, `Hit.reminds` |
 | **Lexicon** | A word list for one prohibition, each **entry** with its meaning: words the agent must not repeat or accept. | `lexicons/*.yaml`, `Lexicon` |
