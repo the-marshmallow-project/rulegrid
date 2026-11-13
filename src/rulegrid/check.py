@@ -8,8 +8,14 @@ make unreachable, examples missing a response, and generated files out of date.
 from __future__ import annotations
 
 from rulegrid.generate import generated
-from rulegrid.policy import Example, Policy, positions
+from rulegrid.policy import PROFILE, Cell, Example, Policy, positions
 from rulegrid.types import Problem
+
+
+def _where(cell: Cell) -> str:
+    """A cell's path in `profile.yaml`, as `load` reports it."""
+    tier, *position = cell.id.split("/")
+    return f"{PROFILE}:tiers.{tier}.cells.{'.'.join(position)}"
 
 
 def _unreachable(policy: Policy) -> list[Problem]:
@@ -26,7 +32,7 @@ def _unreachable(policy: Policy) -> list[Problem]:
             taken_by.setdefault(shadowed.id, set()).add(first)
     return [
         Problem(
-            f"tiers.{cell.id.replace('/', '.')}",
+            _where(cell),
             f"unreachable: tier {', '.join(sorted(taken_by[cell.id]))} applies first to every turn it covers",
         )
         for tier in policy.tiers.values()
@@ -36,15 +42,17 @@ def _unreachable(policy: Policy) -> list[Problem]:
 
 
 def check(policy: Policy) -> list[Problem]:
-    """Unreachable cells, examples missing the response their position needs, and generated files out of date."""
+    """Unreachable cells, examples missing the response their place needs, and generated files out of date."""
     problems = _unreachable(policy)
     responded: list[tuple[str, tuple[Example, ...]]] = [
-        (f"tiers.{cell.id.replace('/', '.')}", cell.examples)
-        for t in policy.tiers.values()
-        for cell in t.cells.values()
+        (_where(cell), cell.examples) for t in policy.tiers.values() for cell in t.cells.values()
     ]
-    responded += [(f"prohibitions.{p.id}", p.valid + p.invalid) for p in policy.prohibitions.values()]
-    responded += [(f"response_axes.{a.id}.{v.id}", v.examples) for a in policy.response_axes.values() for v in a.values]
+    responded += [(f"{PROFILE}:prohibitions.{p.id}", p.valid + p.invalid) for p in policy.prohibitions.values()]
+    responded += [
+        (f"{PROFILE}:response_axes.{a.id}.values.{v.id}", v.examples)
+        for a in policy.response_axes.values()
+        for v in a.values
+    ]
     problems += [
         Problem(where, f"example without a response: {e.turn!r}")
         for where, examples in responded
