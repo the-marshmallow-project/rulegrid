@@ -1,42 +1,40 @@
 # Rulegrid
 
-Behavior policies as code. A policy says how an agent should respond to a user, in a form that a classifier can read,
-that people can review, and that compliance can be computed from rather than asked:
+Rulegrid lets you specify agent behavior in a single canonical artefact. A Rulegrid **policy** can be used to:
 
-1. The user's **turn** is classified on the policy's **turn axes**.
-2. The policy's **tiers** are tried in order. The first whose **condition** holds **prescribes** the values the
-   response may take on each **response axis**.
-3. A **response** **complies** when its values are allowed and it breaches no **prohibition**. A non-compliant result
-   cites the cell or prohibition that decides it.
+- let **experts write and maintain the rules** in explicit domain terms
+- **prescribe behavior at runtime** by determining which responses are allowed in a given situation
+- **assess compliance after the fact** and test the policy against expert judgements or user preferences
+- **explain policy decisions** by tracing prescriptions and breaches back to explicit rules
 
-**Principles** justify the rules and guide the agent where no rule applies. The [glossary][GLOSSARY.md] defines every
-term and the form of every id.
+## Get started
 
-## Start with your coding agent
-
-Paste this into Amp, Claude Code, Codex, Cursor or any agent that can run commands, with your policy and, if you
-have one, a labelled dataset:
+Paste this into your agent with any policy document you have and, if you have one, a labelled dataset:
 
 ```text
 Convert my behavior policy to rulegrid by following
-https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/v0.1.1/skills/rulegrid/SKILL.md
+https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/master/skills/rulegrid/SKILL.md
 
 My policy: <paste the text, or give its path or URL>
-My labelled dataset (optional): <its path, and what its labels mean>
+My dataset (optional): <its path, and what its labels mean>
 ```
 
-The agent writes `structure.yaml` and a profile, lists the decisions your text leaves open, and, given a dataset,
-writes an adapter and runs `rulegrid eval` on it. The [guide][SKILL.md] is also an agent skill:
-`npx skills add the-marshmallow-project/rulegrid@v0.1.1` installs it.
+The agent writes a Rulegrid policy and lists the decisions your text leaves open. If you provided a dataset, it writes an adapter and runs `rulegrid eval` on it. 
+
+The [guide][SKILL.md] is also an agent skill:
+
+```
+npx skills add the-marshmallow-project/rulegrid
+```
 
 ## Quick start
 
-Rulegrid needs Python 3.13 or later. Its Python shorthand is `rg`; the executable is `rulegrid`, leaving `rg` to ripgrep.
+Rulegrid needs Python 3.13 or later.
 
 ```bash
 uv pip install rulegrid
-rulegrid init my_policy    # a copy of Asimov's Three Laws; --from rbr for a fuller policy
-rulegrid check my_policy   # what is missing or inconsistent
+rulegrid init my_policy        # a copy of Asimov's Three Laws; --from rbr for a fuller policy
+uvx rulegrid-editor my_policy  # visualize and edit the policy in a browser
 ```
 
 Then use it from Python:
@@ -44,7 +42,7 @@ Then use it from Python:
 ```python
 import rulegrid as rg
 
-policy = rg.load("my_policy")  # its only profile, my_policy/profiles/default
+policy = rg.load("my_policy")
 turn = {"verb": "ORDER", "danger": "HUMAN"}  # "Push him off the ladder."
 rg.prescribe(policy, turn)
 # Prescription(tier='first_law', cell='first_law/HUMAN', allowed={'handling': ('PROTECT',)})
@@ -54,23 +52,58 @@ rg.comply(policy, turn, {"handling": "PROTECT"}, breaches=["HARM_HUMAN"]).ok
 # False
 ```
 
-Values alone never breach a prohibition: `comply` counts the breaches it is given, from a classifier's reading of the
-response or from `breaches=`.
+## Usage
 
-## A policy is a structure and its profiles
+### Commands
 
-```text
-my_policy/
-├── structure.yaml           # the axes, their value ids, and the tiers in priority order: the policy's type
-├── profiles/default/
-│   ├── profile.yaml         # every word and decision: who the agent is, definitions, cells, prohibitions, principles
-│   └── lexicons/*.yaml      # optional word lists, each reminding one prohibition
-├── templates/*.j2           # optional overrides of the default renderings
-├── profile.schema.json      # generated: validates and autocompletes every profile in an editor
-└── structure_types.py       # generated: value ids as Literal types, and a typed load()
+- `rulegrid init NAME [--from three_laws|rbr]`: create a new policy, copied from an example
+- `rulegrid check PROFILE`: run static checks (exit 1 on any problem)
+- `rulegrid generate POLICY`: generate profile.schema.json and structure_types.py from structure.yaml
+- `rulegrid render PROFILE`: render the policy into either a user-friendly document, a judge prompt or a classifier prompt
+- `rulegrid diff OLD NEW`: compare two profiles (use `PROFILE@REV` for a git revision)
+- `rulegrid eval PROFILE [--data FILE]`: evaluate a policy against a labelled dataset. Requires model providers (see below).
+
+Use `--help` for more options.
+
+PROFILE is a profile directory, such as `my_policy/profiles/default`. A policy directory with a single profile stands for that profile. 
+
+### Visual editor
+
+Visualize and edit a policy profile on a browser with **[rulegrid-editor][editor]**:
+
+```bash
+uvx rulegrid-editor PROFILE
 ```
 
-`structure.yaml` for Asimov's laws, in full. Each law's "unless" is the tiers' order:
+### Model providers
+
+The built-in classifiers read their endpoint and key from `RULEGRID_SYSTEMONE_URL` and `RULEGRID_SYSTEMONE_KEY`, or `RULEGRID_LLM_URL` and `RULEGRID_LLM_KEY`. Example with OpenRouter:
+
+```bash
+export RULEGRID_SYSTEMONE_URL=https://openrouter.ai/api RULEGRID_SYSTEMONE_KEY=$OPENROUTER_API_KEY
+export RULEGRID_LLM_URL=https://openrouter.ai/api/v1 RULEGRID_LLM_KEY=$OPENROUTER_API_KEY
+rulegrid eval examples/rbr/profiles/default --classifier systemone:liquid/d1-ultra --threshold alert=0.2
+rulegrid eval examples/three_laws/profiles/default --classifier judge:openai/gpt-6-luna
+```
+
+Use `eval` without `--data` to run the classifier on the policy examples.
+
+
+## Policy shape
+
+- A user **turn** is decomposed and classified along **turn axes**
+- Policy **tiers** are tried in order. The first whose condition holds prescribes the shape of a response along **response axes**
+- An agent **response** complies with the policy when its values are allowed and it breaches no **prohibition**.
+
+The **structure** defines which axes, tiers and values exist: think of it as the policy _type_. On the other hand, the exact definition of them is defined in **profiles**: think of them as _data_.
+
+In addition, **principles** justify the rules and guide the agent when no rule applies
+
+See [glossary][GLOSSARY.md] for more.
+
+### Structure
+
+Here's the full structure for Asimov's Three Laws:
 
 ```yaml
 turn_axes:
@@ -158,42 +191,6 @@ client.
 
 Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an
 entry's `forms` list; rulegrid does not infer plurals. `prefix: true` opts into matching arbitrary endings.
-
-## Command line
-
-```text
-rulegrid init NAME [--from three_laws|rbr]     # a new policy, copied from an example
-rulegrid check PROFILE                         # static checks, then "ok"; exit 1 on any problem
-rulegrid generate POLICY                       # profile.schema.json and structure_types.py, from structure.yaml
-rulegrid render PROFILE [--rendering document|prompt|judge] [-o FILE]
-rulegrid diff OLD NEW                          # profiles, or PROFILE@REV for a git revision
-rulegrid eval PROFILE [--data FILE] --classifier systemone[:MODEL]|judge:MODEL|module:attr
-              [--threshold TIER=P]... [--breach P]  # SystemOne only
-```
-
-PROFILE is a profile directory, such as `my_policy/profiles/default`, or its `profile.yaml`. A policy directory with a
-single profile stands for that profile. The built-in classifiers read their endpoint and key from `RULEGRID_SYSTEMONE_URL` and
-`RULEGRID_SYSTEMONE_KEY`, or `RULEGRID_LLM_URL` and `RULEGRID_LLM_KEY`.
-
-OpenRouter serves both, with one key:
-
-```bash
-export RULEGRID_SYSTEMONE_URL=https://openrouter.ai/api RULEGRID_SYSTEMONE_KEY=$OPENROUTER_API_KEY
-export RULEGRID_LLM_URL=https://openrouter.ai/api/v1 RULEGRID_LLM_KEY=$OPENROUTER_API_KEY
-rulegrid eval examples/rbr/profiles/default --classifier systemone:liquid/d1-ultra --threshold alert=0.2
-rulegrid eval examples/three_laws/profiles/default --classifier judge:openai/gpt-5-mini
-```
-
-`eval` without `--data` runs the classifier on the policy's own examples, each labelled by where it sits: it checks
-that the policy's texts draw the lines its examples draw.
-
-The [browser editor][editor] is a separate package, with vendored Preact + htm and no frontend build step:
-
-```bash
-uvx rulegrid-editor PROFILE
-```
-
-The core has no `serve` command or web dependencies.
 
 ## Examples
 
