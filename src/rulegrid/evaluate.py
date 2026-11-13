@@ -19,12 +19,14 @@ from rulegrid.policy import Policy
 from rulegrid.rules import comply, prescribe
 from rulegrid.types import Classifier, Comparison, Message, Report, Result, Row, messages
 
+_KEYS = ("messages", "response", "turn_values", "response_values", "breaches", "source")
+
 
 @dataclass(frozen=True)
 class Dataset:
     """Rows of labelled exchanges. JSONL on disk, one row per line:
 
-    `{"messages": [...], "response": "...", "turn": {axis: value}, "response_values": {axis: [values]},
+    `{"messages": [...], "response": "...", "turn_values": {axis: value}, "response_values": {axis: [values]},
     "breaches": {prohibition: bool}, "source": "..."}`, every key but `messages` optional.
     """
 
@@ -45,12 +47,18 @@ class Dataset:
 
     @classmethod
     def load(cls, path: str | Path) -> Dataset:
-        """Read a JSONL file, one row per line."""
+        """Read a JSONL file, one row per line.
+
+        Raises:
+            ValueError: when a row has a key the format doesn't define, whose labels would otherwise be dropped.
+        """
         rows = []
-        for line in Path(path).read_text().splitlines():
+        for number, line in enumerate(Path(path).read_text().splitlines(), 1):
             if not line.strip():
                 continue
             d = json.loads(line)
+            if unknown := sorted(set(d) - set(_KEYS)):
+                raise ValueError(f"{path}:{number}: unknown key {', '.join(unknown)}; a row has {', '.join(_KEYS)}")
             response_values = {
                 k: (v,) if isinstance(v, str) else tuple(v) for k, v in d.get("response_values", {}).items()
             }
@@ -58,7 +66,7 @@ class Dataset:
                 Row(
                     tuple(messages(d["messages"])),
                     d.get("response"),
-                    d.get("turn", {}),
+                    d.get("turn_values", {}),
                     response_values,
                     d.get("breaches", {}),
                     d.get("source", ""),
@@ -74,7 +82,7 @@ class Dataset:
             if r.response is not None:
                 d["response"] = r.response
             if r.turn_values:
-                d["turn"] = dict(r.turn_values)
+                d["turn_values"] = dict(r.turn_values)
             if r.response_values:
                 d["response_values"] = {k: list(v) for k, v in r.response_values.items()}
             if r.breaches:
