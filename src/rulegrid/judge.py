@@ -107,7 +107,7 @@ class Judge:
                 id=(_literal(list(p.prohibitions)), ...),
                 rule=(str, Field(description="The words of the prohibition, copied from the policy.")),
                 why=(str, Field(description="Whether these words do what the prohibition says, and how.")),
-                breaks=(bool, Field(description="Whether these words break it.")),
+                breaches=(bool, Field(description="Whether these words breach it.")),
             )
             fields["concerns"] = (list[concern], ...)
         response = create_model("Response", __config__=_FORBID, **fields)
@@ -171,7 +171,7 @@ class Judge:
             else:
                 values[a.id], evidence[a.id] = picked.id, picked.quote
         concerns = getattr(answer.response, "concerns", [])
-        breaches = tuple({c.id: Breach(c.id, c.quote, c.why) for c in concerns if c.breaks}.values())
+        breaches = tuple({c.id: Breach(c.id, c.quote, c.why) for c in concerns if c.breaches}.values())
         response = Classification[Values](values, evidence=evidence, breaches=breaches)
         return Assessment(index, turn, response, answer.rationale, prescribe(p, turn), comply(p, turn, response))
 
