@@ -11,6 +11,23 @@ that people can review, and that compliance can be computed from rather than ask
 
 **Principles** justify the rules and guide the agent where no rule applies.
 
+## Start with your coding agent
+
+Paste this into Amp, Claude Code, Codex, Cursor or any agent that can run commands, with your policy and, if you
+have one, a labelled dataset:
+
+```text
+Convert my behavior policy to rulegrid by following
+https://raw.githubusercontent.com/the-marshmallow-project/rulegrid/main/skills/rulegrid/SKILL.md
+
+My policy: <paste the text, or give its path or URL>
+My labelled dataset (optional): <its path, and what its labels mean>
+```
+
+The agent writes `structure.yaml` and a profile, lists the decisions your text leaves open, and, given a dataset,
+writes an adapter and runs `rulegrid eval` on it. The [guide](skills/rulegrid/SKILL.md) is also an agent skill:
+`npx skills add the-marshmallow-project/rulegrid` installs it.
+
 ## Quick start
 
 Rulegrid needs Python 3.13 or later. Its Python shorthand is `rg`; the executable is `rulegrid`, leaving `rg` to ripgrep.
