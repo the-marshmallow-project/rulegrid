@@ -148,10 +148,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             print(text, end="")
         return 0
-    data = Dataset.load(args.data) if args.data else Dataset.from_policy(policy)
-    # On the policy's own examples, the questions leave them out: a classifier shown an example would only echo it.
-    implementation = classifier(args.classifier, thresholds, args.breach, examples=bool(args.data))(policy)
-    report = asyncio.run(evaluate(policy, data, implementation))
+    try:
+        data = Dataset.load(args.data) if args.data else Dataset.from_policy(policy)
+        # On the policy's own examples, the questions leave them out: a classifier shown an example would only echo it.
+        implementation = classifier(args.classifier, thresholds, args.breach, examples=bool(args.data))(policy)
+        report = asyncio.run(evaluate(policy, data, implementation))
+    except (OSError, RuntimeError, ValueError) as error:  # unreadable data, unknown labels, a failing endpoint
+        print(f"rulegrid eval: {error}", file=sys.stderr)
+        return 1
     print(json.dumps(report.agreement()) if args.json else report.markdown(), end="")
     return 0 if all(r.ok for r in report.results) else 1
 

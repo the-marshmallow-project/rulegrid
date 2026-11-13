@@ -359,10 +359,19 @@ def _validation(where: str, error: ValidationError) -> list[Problem]:
 
 def _checkout(path: Path, revision: str, tree: str) -> Path:
     """`path` in a copy of its git repository at `revision`."""
-    top = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True, cwd=path).strip())
-    archive = subprocess.run(["git", "archive", revision], cwd=top, check=True, capture_output=True).stdout
+    try:
+        top = Path(_git(path, "rev-parse", "--show-toplevel").decode().strip())
+        archive = _git(top, "archive", revision)
+    except (subprocess.CalledProcessError, OSError) as e:
+        stderr = getattr(e, "stderr", None)
+        detail = stderr.decode(errors="replace").strip() if stderr else str(e)
+        raise PolicyError([Problem(f"{path}@{revision}", detail)]) from None
     subprocess.run(["tar", "-x", "-C", tree], input=archive, check=True)
     return Path(tree) / path.resolve().relative_to(top)
+
+
+def _git(cwd: Path, *args: str) -> bytes:
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True).stdout
 
 
 def profiles(root: Path) -> list[Path]:
