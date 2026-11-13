@@ -114,7 +114,7 @@ rulegrid render my_policy     # the policy as a document
 ```
 
 `check` reports in stages: a missing axis or tier hides the problems inside it, and examples and generated files are
-checked only once the profile fits the structure. Loop until it exits 0; after each edit of `structure.yaml`, run
+checked only once the profile fits the structure. Loop until it prints `ok`; after each edit of `structure.yaml`, run
 `generate` again.
 
 Read the rendering against the source: every ledger row appears in it, and everything in it traces to a ledger row or

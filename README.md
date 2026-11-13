@@ -151,7 +151,7 @@ entry's `forms` list; Rulegrid does not infer plurals. `prefix: true` opts into 
 
 ```text
 rulegrid init NAME [--from three_laws|rbr]     # a new policy, copied from a toy one
-rulegrid check PROFILE                         # static checks; exit 1 on any problem
+rulegrid check PROFILE                         # static checks, then "ok"; exit 1 on any problem
 rulegrid generate POLICY                       # profile.schema.json and structure_types.py, from structure.yaml
 rulegrid render PROFILE [--rendering document|prompt|judge] [-o FILE]
 rulegrid diff OLD NEW                          # profiles, or PROFILE@REV for a git revision

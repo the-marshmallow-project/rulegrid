@@ -137,6 +137,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         problems = check(policy)
         for problem in problems:
             print(problem)
+        if not problems:
+            cells = sum(len(t.cells) for t in policy.tiers.values())
+            print(f"ok: {len(policy.tiers)} tiers, {cells} cells, {len(policy.prohibitions)} prohibitions")
         return 1 if problems else 0
     if args.command == "render":
         text = render(policy, args.rendering)
