@@ -1,6 +1,6 @@
 [project]
 name = "rulegrid-editor"
-version = "0.1.0"
+version = "0.1.1"
 description = "Browse, edit and try a rulegrid policy in the browser."
 readme = "README.md"
 license = "MIT"
@@ -10,7 +10,7 @@ authors = [
     { name = "Grégoire Lothe", email = "51675587+glothe@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
-dependencies = ["rulegrid>=0.1.0"]
+dependencies = ["rulegrid>=0.1.2,<0.2"]
 
 [project.scripts]
 rulegrid-editor = "rulegrid_editor:main"
