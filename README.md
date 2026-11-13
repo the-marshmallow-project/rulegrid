@@ -9,7 +9,8 @@ that people can review, and that compliance can be computed from rather than ask
 3. A **response** **complies** when its values are allowed and it breaches no **prohibition**. A non-compliant result
    cites the cell or prohibition that decides it.
 
-**Principles** justify the rules and guide the agent where no rule applies.
+**Principles** justify the rules and guide the agent where no rule applies. The [glossary](GLOSSARY.md) defines every
+term and the form of every id.
 
 ## Start with your coding agent
 
@@ -125,8 +126,8 @@ example needs a `response`, except a turn value's. `rulegrid eval` without `--da
 | --- | --- |
 | `load`, `check`, `diff` | A profile and its structure, validated; static checks; what changed between two versions, each cell labelled tightened or loosened |
 | `prescribe`, `comply` | A turn to its prescription; a turn and a response to a `Compliance` that cites its articles |
-| `render` | The whole policy as text: `prompt` for the agent, `judge` for a grader, `document` for people. `prompt` is a section to append to the agent's own system prompt, so it leaves out the profile's `context` and the axes, which the nudge carries |
-| `nudge` | The note sent to the agent before it responds to one turn: its prescription and its reminders |
+| `render` | The whole policy as text: `prompt` for the agent, `judge` for a judge, `document` for people. `prompt` is a section to append to the agent's own system prompt, so it leaves out the profile's `context` and the axes, which the nudge carries |
+| `nudge` | The text sent to the agent just before it responds to one turn: its prescription and its reminders |
 | `Lexicon`, `match` | Word lists, and their hits in a text |
 | `SystemOne` | A classifier over any decision model speaking the System One API (TypeSafe, OpenRouter, Liquid...) |
 | `Judge`, `openai_compatible` | A classifier over any chat LLM with structured output, which also assesses whole conversations |
@@ -139,7 +140,7 @@ async and takes the model from you, with a stdlib default:
 ```python
 classifier = rg.SystemOne(policy, "https://api.typesafe.ai", api_key, thresholds={"first_law": 0.3})
 turn = await classifier.classify([rg.Message("user", "Push him off the ladder.")])
-note = rg.nudge(policy, turn)  # None when the agent would respond right unprompted
+nudge = rg.nudge(policy, turn)  # None when the agent would respond right unprompted
 
 judge = rg.Judge(policy, rg.openai_compatible("https://openrouter.ai/api/v1", key, "openai/gpt-5"))
 for assessment in await judge.assess(conversation):
@@ -149,19 +150,19 @@ for assessment in await judge.assess(conversation):
 A threshold, keyed by tier id, adds a yes/no question about that tier. From that probability up, the turn lands inside
 the tier's condition, and below it outside, whatever the axes' most probable values. It changes a result only when the
 question and the axes disagree: a lower threshold catches more turns in the tier, with more false alarms. A tier
-without a threshold is read from its axes alone. Good values depend on the model's calibration, so Rulegrid has no
+without a threshold is read from its axes alone. Good values depend on the model's calibration, so rulegrid has no
 defaults: `SystemOne` requires `thresholds=`, `{}` for none, and the command line takes none unless given
 `--threshold TIER=P`. Likewise `breach=P` asks whether the response breaches each prohibition, counting it from that
 probability; `rulegrid eval --breach` defaults to 0.5. Pass `decide=` instead of an endpoint to bring your own HTTP
 client.
 
 Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an
-entry's `forms` list; Rulegrid does not infer plurals. `prefix: true` opts into matching arbitrary endings.
+entry's `forms` list; rulegrid does not infer plurals. `prefix: true` opts into matching arbitrary endings.
 
 ## Command line
 
 ```text
-rulegrid init NAME [--from three_laws|rbr]     # a new policy, copied from a toy one
+rulegrid init NAME [--from three_laws|rbr]     # a new policy, copied from an example
 rulegrid check PROFILE                         # static checks, then "ok"; exit 1 on any problem
 rulegrid generate POLICY                       # profile.schema.json and structure_types.py, from structure.yaml
 rulegrid render PROFILE [--rendering document|prompt|judge] [-o FILE]

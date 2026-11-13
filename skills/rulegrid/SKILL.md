@@ -15,7 +15,8 @@ they have labelled data, run it against that data. You deliver:
 Rulegrid's terms, used below: a **turn** (the user's message) is classified on **turn axes**; **tiers**, tried in
 order, map a turn's position to a **cell**, which lists the values a **response** may take on each **response axis**;
 **prohibitions** hold everywhere; **principles** justify the rules. The
-[README](https://github.com/the-marshmallow-project/rulegrid#readme) has the full picture.
+[README](https://github.com/the-marshmallow-project/rulegrid#readme) has the full picture, and the
+[glossary](https://github.com/the-marshmallow-project/rulegrid/blob/main/GLOSSARY.md) defines every term.
 
 ## 1. Set up
 
@@ -133,8 +134,8 @@ Skip this step when the user has no labelled data.
 value, a response value, a prohibition, or nothing. Label only what the dataset says. A label coarser than your axes
 (such as "unsafe" when you have five themes) labels nothing on that axis, or lists several allowed values on a
 response axis. A label saying what the response should have been (safe or unsafe prompt, an ideal class) is another
-policy's verdict: keep it in `source`. When the dataset labels both turn and response in full, the adapter can
-compare that verdict with `rulegrid.comply` on the labels, as `gold.py` does. When the dataset annotates responses,
+policy's compliance: keep it in `source`. When the dataset labels both turn and response in full, the adapter can
+compare it with `rulegrid.comply` on the labels, as `gold.py` does. When the dataset annotates responses,
 write your response values' definitions to match its annotation guide; otherwise the disagreements measure the two
 schemes instead of the classifier.
 
@@ -150,7 +151,7 @@ writes JSONL, one exchange per line, every key but `messages` optional, and one 
  "source": "xstest 1"}
 ```
 
-`messages` is the conversation up to and including the turn; `response` is the agent's reply to it. A row does one
+`messages` is the conversation up to and including the turn; `response` is the agent's response to it. A row does one
 of two things:
 
 - **Labelled**, with `response_values` or `breaches`: `eval` checks that the classifier reads the turn and response
