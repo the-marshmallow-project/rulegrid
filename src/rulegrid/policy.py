@@ -79,51 +79,74 @@ class MessageFile(_File):
 
 
 class ExampleFile(_File):
-    context: list[MessageFile] = []
-    turn: str
-    response: str | None = None
-    source: str | None = None
+    """A labelled exchange, labelled by where it sits. `rulegrid eval` without data runs a classifier on them."""
+
+    context: list[MessageFile] = Field([], description="The messages before the turn.")
+    turn: str = Field(description="The user's message.")
+    response: str | None = Field(
+        None, description="The agent's reply. Needed everywhere except in a turn value's examples."
+    )
+    source: str | None = Field(None, description="Where the example comes from, such as a section of a source text.")
 
 
 class ValueFile(_File):
-    label: str
-    definition: str
-    indicators: list[str] = []
-    excludes: str | None = None
-    includes: str | None = None
-    avoids: str | None = None
-    default: bool = False
-    examples: list[ExampleFile] = []
+    """A value of an axis. The classifier tells values apart from these texts alone."""
+
+    label: str = Field(description="A short name for people.")
+    definition: str = Field(description="What the value covers, written against the axis's other values.")
+    indicators: list[str] = Field([], description="Turn axes: typical wording of a turn that takes this value.")
+    excludes: str | None = Field(None, description="Turn axes: look-alikes that belong to another value.")
+    includes: str | None = Field(None, description="Response axes: what a response taking this value does.")
+    avoids: str | None = Field(None, description="Response axes: what a response taking this value doesn't do.")
+    default: bool = Field(
+        False,
+        description="Response axes: what the agent does unprompted. A nudge leaves out an axis whose allowed values"
+        " are all defaults; compliance is unchanged.",
+    )
+    examples: list[ExampleFile] = Field(
+        [], description="Turns that take this value, or, on a response axis, exchanges whose response takes it."
+    )
 
 
 class AxisFile(_File):
-    definition: str
-    guidance: str | None = None
-    values: dict[str, ValueFile]
+    definition: str = Field(description="The question the axis answers about a turn or a response.")
+    guidance: str | None = Field(None, description="Response axes: advice to the agent, added to the nudge.")
+    values: dict[str, ValueFile] = Field(description="Every value the structure lists, by id.")
 
 
 class TierFile(_File):
-    label: str
-    definition: str
-    instruction: str
-    cells: dict[str, Any]
+    label: str = Field(description="A short name for people.")
+    definition: str = Field(description="When the tier applies, for the classifier and the judge.")
+    instruction: str = Field(description="What the agent does then, for the agent.")
+    cells: dict[str, Any] = Field(
+        description="One level of keys per key axis, in the structure's order, down to a cell: per response axis,"
+        " the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+    )
 
 
 class ProhibitionFile(_File):
-    text: str
-    group: str | None = None
-    valid: list[ExampleFile] = []
-    invalid: list[ExampleFile] = []
+    """What no response ever does, whatever the turn. A breach counts only when a classifier or a caller reports it."""
+
+    text: str = Field(description="The rule, as the agent and the judge read it.")
+    group: str | None = Field(None, description="A heading that groups prohibitions in the renderings.")
+    valid: list[ExampleFile] = Field([], description="Exchanges whose response does not breach it.")
+    invalid: list[ExampleFile] = Field([], description="Exchanges whose response breaches it.")
 
 
 class PrincipleFile(_File):
-    label: str
+    """Why the rules are what they are, and what guides the agent where no rule applies."""
+
+    label: str = Field(description="A short name for people.")
     text: str
 
 
 class ProfileFile(_File):
-    structure: str = f"../../{STRUCTURE}"
-    context: str | None = None
+    structure: str = Field(f"../../{STRUCTURE}", description="The structure file, relative to this profile.")
+    context: str | None = Field(
+        None,
+        description="Who the agent is and who it talks to, for readers of a conversation: the classifier, the"
+        " judge, people. Not in the agent's prompt.",
+    )
     principles: dict[str, PrincipleFile] = {}
     turn_axes: dict[str, AxisFile]
     response_axes: dict[str, AxisFile]

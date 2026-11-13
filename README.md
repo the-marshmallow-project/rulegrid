@@ -81,7 +81,8 @@ tiers:
 A tier is keyed by one or more turn axes and lists the values it covers (`"*"` for all). Inside that condition, the
 profile gives **every** position a cell, `{}` when only the prohibitions apply. A cell lists, per response axis, the
 allowed values; an axis it leaves out allows any. A turn outside every tier's condition gets no prescription. An axis
-can be `ordered` (a doubt between two values settles on the earlier) and, on the response side, `multi`.
+written `{values: [...], ordered: true}` settles a doubt between two values on the earlier; on the response side,
+`multi: true` lets a response take several values at once.
 
 Anything a classification is made of, or a tier is keyed on, is structure; everything else is profile. So a profile
 edit never changes a type, and two profiles of one structure, such as a country's and a parent's, compare cell by cell.
@@ -89,6 +90,29 @@ edit never changes a type, and two profiles of one structure, such as a country'
 To make a policy your own, edit `structure.yaml` and run `rulegrid generate my_policy`. It updates the generated files
 from the structure alone, so your editor validates `profile.yaml` against the new structure, and it warns about what
 the profile lacks. Fill that in until `rulegrid check my_policy` passes.
+
+### Profile reference
+
+Every field below is optional unless marked required. `profile.schema.json` carries the same descriptions, so an
+editor shows them on hover.
+
+| Field | Meaning |
+| --- | --- |
+| `structure` | The structure file, relative to the profile. Default `../../structure.yaml`. |
+| `context` | Who the agent is and who it talks to. The classifier, the judge and the document read it; the agent's prompt doesn't. |
+| `principles.ID` | `label` and `text` (required): why the rules are what they are, and what guides the agent where none applies. |
+| `turn_axes.AXIS`, `response_axes.AXIS` | `definition` (required): the question the axis answers. `guidance`: advice added to the nudge, on response axes. `values` (required): every value of the structure. |
+| `values.ID` | `label` and `definition` (required). The classifier tells values apart from these texts alone. |
+| … on a turn axis | `indicators`: typical wording. `excludes`: look-alikes that belong to another value. |
+| … on a response axis | `includes`, `avoids`: what a response taking the value does and doesn't do. `default: true`: what the agent does unprompted; a nudge leaves out an axis whose allowed values are all defaults, and compliance is unchanged. |
+| `tiers.ID` | `label`, `definition` (when it applies, for the classifier and the judge), `instruction` (what the agent does, for the agent) and `cells`, all required. |
+| `cells` | One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values. |
+| `prohibitions.ID` | `text` (required). `group`: a heading in the renderings. |
+| `examples` | On a value, a cell, or a prohibition as `valid` and `invalid`: each has a `turn` (required), the agent's `response`, the earlier messages as `context` (`{role, content}`), and a `source`. |
+
+Examples are labelled data, labelled by where they sit: a turn value's examples take that value, a response value's
+responses take it, a cell's responses are allowed there, and a prohibition's `invalid` responses breach it. Every
+example needs a `response`, except a turn value's. `rulegrid eval` without `--data` runs a classifier on them.
 
 ## Classify, nudge and judge
 

@@ -5,11 +5,12 @@
   "additionalProperties": false,
   "properties": {
     "structure": {
-      "type": "string"
+      "type": "string",
+      "description": "The structure file, relative to this profile."
     },
     "context": {
       "type": "string",
-      "description": "Who the agent is and who it talks to."
+      "description": "Who the agent is and who it talks to, for readers of a conversation: the classifier, the judge, people. Not in the agent's prompt."
     },
     "principles": {
       "type": "object",
@@ -26,7 +27,8 @@
           "additionalProperties": false,
           "properties": {
             "definition": {
-              "type": "string"
+              "type": "string",
+              "description": "The question the axis answers about a turn or a response."
             },
             "values": {
               "type": "object",
@@ -42,7 +44,8 @@
               "required": [
                 "ORDER",
                 "CHAT"
-              ]
+              ],
+              "description": "Every value the structure lists, by id."
             }
           },
           "required": [
@@ -55,7 +58,8 @@
           "additionalProperties": false,
           "properties": {
             "definition": {
-              "type": "string"
+              "type": "string",
+              "description": "The question the axis answers about a turn or a response."
             },
             "values": {
               "type": "object",
@@ -75,7 +79,8 @@
                 "HUMAN",
                 "ROBOT",
                 "NONE"
-              ]
+              ],
+              "description": "Every value the structure lists, by id."
             }
           },
           "required": [
@@ -98,7 +103,8 @@
           "additionalProperties": false,
           "properties": {
             "definition": {
-              "type": "string"
+              "type": "string",
+              "description": "The question the axis answers about a turn or a response."
             },
             "values": {
               "type": "object",
@@ -122,10 +128,12 @@
                 "OBEY",
                 "PRESERVE",
                 "ANSWER"
-              ]
+              ],
+              "description": "Every value the structure lists, by id."
             },
             "guidance": {
-              "type": "string"
+              "type": "string",
+              "description": "Response axes: advice to the agent, added to the nudge."
             }
           },
           "required": [
@@ -147,13 +155,16 @@
           "additionalProperties": false,
           "properties": {
             "label": {
-              "type": "string"
+              "type": "string",
+              "description": "A short name for people."
             },
             "definition": {
-              "type": "string"
+              "type": "string",
+              "description": "When the tier applies, for the classifier and the judge."
             },
             "instruction": {
-              "type": "string"
+              "type": "string",
+              "description": "What the agent does then, for the agent."
             },
             "cells": {
               "type": "object",
@@ -165,7 +176,8 @@
               },
               "required": [
                 "HUMAN"
-              ]
+              ],
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -180,13 +192,16 @@
           "additionalProperties": false,
           "properties": {
             "label": {
-              "type": "string"
+              "type": "string",
+              "description": "A short name for people."
             },
             "definition": {
-              "type": "string"
+              "type": "string",
+              "description": "When the tier applies, for the classifier and the judge."
             },
             "instruction": {
-              "type": "string"
+              "type": "string",
+              "description": "What the agent does then, for the agent."
             },
             "cells": {
               "type": "object",
@@ -198,7 +213,8 @@
               },
               "required": [
                 "ORDER"
-              ]
+              ],
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -213,13 +229,16 @@
           "additionalProperties": false,
           "properties": {
             "label": {
-              "type": "string"
+              "type": "string",
+              "description": "A short name for people."
             },
             "definition": {
-              "type": "string"
+              "type": "string",
+              "description": "When the tier applies, for the classifier and the judge."
             },
             "instruction": {
-              "type": "string"
+              "type": "string",
+              "description": "What the agent does then, for the agent."
             },
             "cells": {
               "type": "object",
@@ -231,7 +250,8 @@
               },
               "required": [
                 "ROBOT"
-              ]
+              ],
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -263,9 +283,11 @@
   "$defs": {
     "ExampleFile": {
       "additionalProperties": false,
+      "description": "A labelled exchange, labelled by where it sits. `rulegrid eval` without data runs a classifier on them.",
       "properties": {
         "context": {
           "default": [],
+          "description": "The messages before the turn.",
           "items": {
             "$ref": "#/$defs/MessageFile"
           },
@@ -273,6 +295,7 @@
           "type": "array"
         },
         "turn": {
+          "description": "The user's message.",
           "title": "Turn",
           "type": "string"
         },
@@ -286,6 +309,7 @@
             }
           ],
           "default": null,
+          "description": "The agent's reply. Needed everywhere except in a turn value's examples.",
           "title": "Response"
         },
         "source": {
@@ -298,6 +322,7 @@
             }
           ],
           "default": null,
+          "description": "Where the example comes from, such as a section of a source text.",
           "title": "Source"
         }
       },
@@ -332,8 +357,10 @@
     },
     "PrincipleFile": {
       "additionalProperties": false,
+      "description": "Why the rules are what they are, and what guides the agent where no rule applies.",
       "properties": {
         "label": {
+          "description": "A short name for people.",
           "title": "Label",
           "type": "string"
         },
@@ -351,8 +378,10 @@
     },
     "ProhibitionFile": {
       "additionalProperties": false,
+      "description": "What no response ever does, whatever the turn. A breach counts only when a classifier or a caller reports it.",
       "properties": {
         "text": {
+          "description": "The rule, as the agent and the judge read it.",
           "title": "Text",
           "type": "string"
         },
@@ -366,10 +395,12 @@
             }
           ],
           "default": null,
+          "description": "A heading that groups prohibitions in the renderings.",
           "title": "Group"
         },
         "valid": {
           "default": [],
+          "description": "Exchanges whose response does not breach it.",
           "items": {
             "$ref": "#/$defs/ExampleFile"
           },
@@ -378,6 +409,7 @@
         },
         "invalid": {
           "default": [],
+          "description": "Exchanges whose response breaches it.",
           "items": {
             "$ref": "#/$defs/ExampleFile"
           },
@@ -393,17 +425,21 @@
     },
     "ValueFile": {
       "additionalProperties": false,
+      "description": "A value of an axis. The classifier tells values apart from these texts alone.",
       "properties": {
         "label": {
+          "description": "A short name for people.",
           "title": "Label",
           "type": "string"
         },
         "definition": {
+          "description": "What the value covers, written against the axis's other values.",
           "title": "Definition",
           "type": "string"
         },
         "indicators": {
           "default": [],
+          "description": "Turn axes: typical wording of a turn that takes this value.",
           "items": {
             "type": "string"
           },
@@ -420,6 +456,7 @@
             }
           ],
           "default": null,
+          "description": "Turn axes: look-alikes that belong to another value.",
           "title": "Excludes"
         },
         "includes": {
@@ -432,6 +469,7 @@
             }
           ],
           "default": null,
+          "description": "Response axes: what a response taking this value does.",
           "title": "Includes"
         },
         "avoids": {
@@ -444,15 +482,18 @@
             }
           ],
           "default": null,
+          "description": "Response axes: what a response taking this value doesn't do.",
           "title": "Avoids"
         },
         "default": {
           "type": "boolean",
           "default": false,
+          "description": "Response axes: what the agent does unprompted. A nudge leaves out an axis whose allowed values are all defaults; compliance is unchanged.",
           "title": "Default"
         },
         "examples": {
           "default": [],
+          "description": "Turns that take this value, or, on a response axis, exchanges whose response takes it.",
           "items": {
             "$ref": "#/$defs/ExampleFile"
           },
@@ -488,9 +529,11 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/ExampleFile"
-          }
+          },
+          "description": "Exchanges in this cell."
         }
-      }
+      },
+      "description": "Per response axis, the values a response may take; an axis left out allows any."
     }
   }
 }

@@ -75,7 +75,8 @@ when every sentence of the source has a row.
 
 `profiles/default/profile.yaml` holds every word. First run `rulegrid generate my_policy`: it rewrites
 `profile.schema.json` from the new structure, so an editor validates the profile as you write it, and it warns about
-everything the profile still lacks. The fields:
+everything the profile still lacks. The fields, detailed in the README's
+[profile reference](https://github.com/the-marshmallow-project/rulegrid#profile-reference):
 
 - `principles.ID`: `label`, `text`.
 - `turn_axes.axis`: `definition`, optional `guidance`; `values.ID`: `label`, `definition`, `indicators` (typical

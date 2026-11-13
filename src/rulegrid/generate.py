@@ -9,16 +9,20 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from pydantic import BaseModel
 from pydantic.json_schema import models_json_schema
 
 from rulegrid.policy import (
     STRUCTURE,
+    AxisFile,
     AxisSpec,
     ExampleFile,
     PrincipleFile,
+    ProfileFile,
     ProhibitionFile,
     Structure,
     StructureFile,
+    TierFile,
     ValueFile,
 )
 
@@ -33,13 +37,19 @@ def _object(properties: dict[str, Any], required: list[str] | None = None) -> di
     return schema
 
 
+def _text(model: type[BaseModel], name: str) -> dict[str, Any]:
+    """A string field of a profile file model, with its description."""
+    return {"type": "string", "description": model.model_fields[name].description}
+
+
 def _axes(axes: Mapping[str, AxisSpec], side: str) -> dict[str, Any]:
     properties = {}
     for axis_id, spec in axes.items():
         values = _object({v: {"$ref": "#/$defs/ValueFile"} for v in spec.values}, list(spec.values))
-        fields: dict[str, Any] = {"definition": {"type": "string"}, "values": values}
+        values["description"] = AxisFile.model_fields["values"].description
+        fields: dict[str, Any] = {"definition": _text(AxisFile, "definition"), "values": values}
         if side == "response":
-            fields["guidance"] = {"type": "string"}
+            fields["guidance"] = _text(AxisFile, "guidance")
         properties[axis_id] = _object(fields, ["definition", "values"])
     return _object(properties, list(properties))
 
@@ -63,14 +73,16 @@ def profile_schema(structure: Structure) -> dict[str, Any]:
         axis_id: {"type": "array", "items": {"enum": list(spec.values)}, "minItems": 1, "uniqueItems": True}
         for axis_id, spec in structure.response_axes.items()
     }
-    defs["Cell"] = _object({**cell, "examples": {"type": "array", "items": {"$ref": "#/$defs/ExampleFile"}}})
+    examples = {"type": "array", "items": {"$ref": "#/$defs/ExampleFile"}, "description": "Exchanges in this cell."}
+    defs["Cell"] = _object({**cell, "examples": examples})
+    defs["Cell"]["description"] = "Per response axis, the values a response may take; an axis left out allows any."
     tiers = {
         tier_id: _object(
             {
-                "label": {"type": "string"},
-                "definition": {"type": "string"},
-                "instruction": {"type": "string"},
-                "cells": _cells(condition),
+                "label": _text(TierFile, "label"),
+                "definition": _text(TierFile, "definition"),
+                "instruction": _text(TierFile, "instruction"),
+                "cells": {**_cells(condition), "description": TierFile.model_fields["cells"].description},
             },
             ["label", "definition", "instruction", "cells"],
         )
@@ -81,8 +93,8 @@ def profile_schema(structure: Structure) -> dict[str, Any]:
         "title": "rulegrid profile",
         **_object(
             {
-                "structure": {"type": "string"},
-                "context": {"type": "string", "description": "Who the agent is and who it talks to."},
+                "structure": _text(ProfileFile, "structure"),
+                "context": _text(ProfileFile, "context"),
                 "principles": {"type": "object", "additionalProperties": {"$ref": "#/$defs/PrincipleFile"}},
                 "turn_axes": _axes(structure.turn_axes, "turn"),
                 "response_axes": _axes(structure.response_axes, "response"),
