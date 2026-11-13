@@ -10,7 +10,7 @@ authors = [
     { name = "Grégoire Lothe", email = "51675587+glothe@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
-dependencies = ["rulegrid @ git+https://github.com/the-marshmallow-project/rulegrid"]
+dependencies = ["rulegrid>=0.1.0"]
 
 [project.scripts]
 rulegrid-editor = "rulegrid_editor:main"
@@ -21,6 +21,3 @@ rulegrid = { workspace = true }
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.hatch.metadata]
-allow-direct-references = true

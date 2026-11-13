@@ -1,9 +1,10 @@
 # rulegrid-editor
 
-Browse, edit and try a [rulegrid](../README.md) policy in the browser, with one command:
+Browse, edit and try a [rulegrid](https://github.com/the-marshmallow-project/rulegrid) policy in the browser, with
+one command:
 
 ```bash
-uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor PROFILE
+uvx rulegrid-editor PROFILE
 ```
 
 PROFILE is a profile directory, such as `examples/rbr/profiles/default`. The page mirrors the policy's concepts: its

@@ -190,7 +190,7 @@ that the policy's texts draw the lines its examples draw.
 The [browser editor][editor] is a separate package, with vendored Preact + htm and no frontend build step:
 
 ```bash
-uvx --from "git+https://github.com/the-marshmallow-project/rulegrid#subdirectory=editor" rulegrid-editor PROFILE
+uvx rulegrid-editor PROFILE
 ```
 
 The core has no `serve` command or web dependencies.
