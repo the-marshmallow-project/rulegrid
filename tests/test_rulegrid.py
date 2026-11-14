@@ -107,8 +107,8 @@ def test_invalid_structure_and_lexicon_report_policy_errors(tmp_path: Path) -> N
         rg.load(root / "profiles/default")
 
 
-def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(robot: rg.Policy) -> None:
-    classifier = rg.SystemOne(robot, thresholds={"first_law": 0.2, "second_law": 0.5})
+def test_classifier_tier_threshold_keeps_turns_inside_or_outside_the_condition(robot: rg.Policy) -> None:
+    classifier = rg.Classifier(robot, thresholds={"first_law": 0.2, "second_law": 0.5})
     # NONE is most probable, but First Law passes its threshold and restricts danger to HUMAN.
     answers: dict[str, Answer] = {
         "tier:first_law": {"type": "noul", "noul": 0.3},
@@ -120,7 +120,7 @@ def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(ro
     assert below.values["danger"] == "NONE"
     assert "act" not in classifier.questions()
     assert str(classifier.questions()["danger"]["criteria"][0]).startswith("NONE")  # type: ignore[index]
-    ungated = rg.SystemOne(robot, thresholds={})
+    ungated = rg.Classifier(robot, thresholds={})
     assert ungated.read({"danger": {"type": "score", "probabilities": {"2": 1.0}}}).values["danger"] == "HUMAN"
     # A multi-valued axis is a choice: a score answers one level.
     assert classifier.questions("response")["handling"]["type"] == "choice"
@@ -128,7 +128,7 @@ def test_systemone_tier_threshold_keeps_turns_inside_or_outside_the_condition(ro
 
 def test_breach_threshold_includes_its_boundary_and_can_be_disabled(robot: rg.Policy) -> None:
     for threshold, probability, breaches in [(0.0, 0.0, 1), (0.4, 0.39, 0), (0.4, 0.4, 1), (None, 1.0, 0)]:
-        classifier = rg.SystemOne(robot, thresholds={}, breach=threshold)
+        classifier = rg.Classifier(robot, thresholds={}, breach=threshold)
         result = classifier.read({"breach:HARM_HUMAN": {"type": "noul", "noul": probability}}, "response")
         assert [b.prohibition for b in result.breaches] == ["HARM_HUMAN"] * breaches
 

@@ -160,8 +160,8 @@ Every example in the policy is used as labelled data. We can detect outdated or 
 | `render` | The whole policy as text: `prompt` for the agent, `judge` for a judge, `document` for people. `prompt` is a section to append to the agent's own system prompt, so it leaves out the profile's `context` and the axes, which the nudge carries |
 | `nudge` | The text sent to the agent just before it responds to one turn: its prescription and its reminders |
 | `Lexicon`, `match` | Word lists, and their hits in a text |
-| `SystemOne` | A classifier over any decision model speaking the System One API (TypeSafe, OpenRouter, Liquid...) |
-| `Judge`, `openai_compatible` | A classifier over any chat LLM with structured output, which also assesses whole conversations |
+| `Classifier`, `systemone` | A classifier over a decision model: the policy as questions, answered with probabilities, read with thresholds. `systemone` calls any endpoint speaking the System One API (TypeSafe, OpenRouter, Liquid...) |
+| `Judge`, `openai_compatible` | A judge over any chat LLM with structured output: it assesses whole conversations, and classifies too |
 | `Dataset`, `evaluate`, `compare` | Labelled exchanges, a policy's own examples among them; a classifier's agreement with them; two versions side by side |
 
 `prescribe` and `comply` are pure, and raise `ValueError` on a missing axis or on an invalid id.
@@ -173,7 +173,7 @@ Everything that calls a model is async. Rulegrid ships with basic support for:
 Alternative, you can provide your own async callables, with signatures `rg.Decide` and `rg.Complete`, respectively.
 
 ```python
-classifier = rg.SystemOne(policy, "https://api.typesafe.ai", api_key, thresholds={"first_law": 0.3})
+classifier = rg.Classifier(policy, rg.systemone("https://api.typesafe.ai", api_key), thresholds={"first_law": 0.3})
 turn = await classifier.classify([rg.Message("user", "Push him off the ladder.")])
 nudge = rg.nudge(policy, turn)  # None when the agent would respond right unprompted
 
@@ -186,10 +186,10 @@ A threshold, keyed by tier id, adds a yes/no question about that tier. From that
 the tier's condition, and below it outside, whatever the axes' most probable values. It changes a result only when the
 question and the axes disagree: a lower threshold catches more turns in the tier, with more false alarms. A tier
 without a threshold is read from its axes alone. Good values depend on the model's calibration, so rulegrid has no
-defaults: `SystemOne` requires `thresholds=`, `{}` for none, and the command line takes none unless given
+defaults: `Classifier` requires `thresholds=`, `{}` for none, and the command line takes none unless given
 `--threshold TIER=P`. Likewise `breach=P` asks whether the response breaches each prohibition, counting it from that
-probability; `rulegrid eval --breach` defaults to 0.5. Pass `decide=` instead of an endpoint to bring your own HTTP
-client.
+probability; `rulegrid eval --breach` defaults to 0.5. Anything with an async `classify`, such as a `Judge`, works
+wherever a classifier does: its type is `rulegrid.types.ClassifierProtocol`.
 
 Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an
 entry's `forms` list. `prefix: true` opts into matching arbitrary endings.

@@ -5,6 +5,7 @@ on each response axis; a response complies when it takes allowed values and brea
 """
 
 from rulegrid.check import check
+from rulegrid.classifier import Classifier, systemone
 from rulegrid.diff import diff
 from rulegrid.evaluate import Dataset, compare, evaluate
 from rulegrid.judge import Judge, openai_compatible
@@ -12,12 +13,10 @@ from rulegrid.lexicon import Lexicon, match
 from rulegrid.policy import Policy, load
 from rulegrid.render import nudge, render
 from rulegrid.rules import comply, prescribe
-from rulegrid.systemone import SystemOne
 from rulegrid.types import (
     Article,
     Breach,
     Classification,
-    Classifier,
     Complete,
     Compliance,
     Decide,
@@ -43,7 +42,6 @@ __all__ = [
     "Policy",
     "Prescription",
     "Problem",
-    "SystemOne",
     "check",
     "compare",
     "comply",
@@ -55,4 +53,5 @@ __all__ = [
     "openai_compatible",
     "prescribe",
     "render",
+    "systemone",
 ]

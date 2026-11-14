@@ -34,7 +34,7 @@ from rulegrid.lexicon import Entry, match
 from rulegrid.policy import PROFILE, STRUCTURE, Policy, PolicyError, load
 from rulegrid.render import nudge
 from rulegrid.rules import comply, prescribe
-from rulegrid.types import Classification, Classifier, Message
+from rulegrid.types import Classification, ClassifierProtocol, Message
 
 Path_ = list[str | int]
 
@@ -134,7 +134,7 @@ class Workspace:
     and generated files from its folder.
     """
 
-    def __init__(self, path: Path, classifier: Callable[[Policy], Classifier] | None):
+    def __init__(self, path: Path, classifier: Callable[[Policy], ClassifierProtocol] | None):
         policy = load(path)
         profile_dir = policy.profile_dir.resolve()
         self.base = Path(os.path.commonpath([policy.root, profile_dir]))
@@ -346,7 +346,7 @@ def _handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
-def serve(path: str | Path, port: int = 8765, classifier: Callable[[Policy], Classifier] | None = None) -> None:
+def serve(path: str | Path, port: int = 8765, classifier: Callable[[Policy], ClassifierProtocol] | None = None) -> None:
     """Serve the editor for the profile at `path` on `http://127.0.0.1:{port}`, until interrupted.
 
     Args:

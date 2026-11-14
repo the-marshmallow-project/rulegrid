@@ -17,7 +17,7 @@ from rulegrid.diff import diff
 from rulegrid.lexicon import match
 from rulegrid.policy import Policy
 from rulegrid.rules import comply, prescribe
-from rulegrid.types import Classifier, Comparison, Message, Report, Result, Row, messages
+from rulegrid.types import ClassifierProtocol, Comparison, Message, Report, Result, Row, messages
 
 _KEYS = ("messages", "response", "turn_values", "response_values", "breaches", "source")
 
@@ -138,7 +138,7 @@ def _shown(value: Any) -> str:
     return value if isinstance(value, str) else ", ".join(sorted(value))
 
 
-async def _read(policy: Policy, row: Row, classifier: Classifier) -> Result:
+async def _read(policy: Policy, row: Row, classifier: ClassifierProtocol) -> Result:
     conversation = list(row.conversation)
     checks: list[tuple[str, bool, str]] = []
     labelled = bool(row.response_values or row.breaches)
@@ -171,7 +171,7 @@ async def _read(policy: Policy, row: Row, classifier: Classifier) -> Result:
     return Result(row, turn, response, tuple(checks), prescription, compliance)
 
 
-async def evaluate(policy: Policy, data: Iterable[Row], classifier: Classifier, concurrency: int = 8) -> Report:
+async def evaluate(policy: Policy, data: Iterable[Row], classifier: ClassifierProtocol, concurrency: int = 8) -> Report:
     """Read every row with the classifier, `concurrency` rows at a time, and check it against its labels.
 
     Rows with a response and no response labels are audited instead: their compliance is computed from the
@@ -200,7 +200,11 @@ async def evaluate(policy: Policy, data: Iterable[Row], classifier: Classifier, 
 
 
 async def compare(
-    old: Policy, new: Policy, data: Iterable[Row], classifier: Callable[[Policy], Classifier], concurrency: int = 8
+    old: Policy,
+    new: Policy,
+    data: Iterable[Row],
+    classifier: Callable[[Policy], ClassifierProtocol],
+    concurrency: int = 8,
 ) -> Comparison:
     """Both versions of a policy on one dataset: what changed, and which rows read differently.
 

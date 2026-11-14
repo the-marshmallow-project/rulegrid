@@ -1,5 +1,5 @@
-"""A classifier over a decision model that speaks System One: typed questions about a JSON state, answered with
-probabilities.
+"""The classifier: questions compiled from a policy, answered with probabilities by a decision model that speaks
+System One, and read back with thresholds into a classification.
 
 The questions are compiled from the policy's definitions, so an edit to a definition reaches the model. Reading the
 answers needs no model either: `questions` and `read` are pure, and `classify` sends one to get the other.
@@ -43,7 +43,7 @@ def default_state(conversation: Sequence[Message], hits: Sequence[Hit]) -> State
     }
 
 
-def client(base_url: str, api_key: str, model: str | None = None, timeout: float = 30) -> Decide:
+def systemone(base_url: str, api_key: str, model: str | None = None, timeout: float = 30) -> Decide:
     """A `Decide` callable for the System One endpoint under `base_url`, such as `https://api.typesafe.ai`.
 
     Without `model`, it asks `GET {base_url}/v1/models` once and takes the endpoint's model when it serves exactly one.
@@ -77,16 +77,14 @@ def _criterion(value: Value, of: Of, examples: bool) -> dict[str, Any]:
     return criterion
 
 
-class SystemOne:
-    """A `Classifier` over a System One decision model.
+class Classifier:
+    """Turns the policy into questions, has a decision model answer them with probabilities, and applies thresholds to
+    pick one value per axis.
 
     Args:
         policy: the policy whose axes to classify on.
-        base_url: the endpoint, such as `https://api.typesafe.ai`, `https://openrouter.ai/api` or
-            `https://api.liquid.ai/decisions`; `/v1/systemone` is appended.
-        api_key: its key.
-        model: the model id, needed only when the endpoint serves several.
-        decide: your own client instead of `base_url` and `api_key`, with your HTTP client, timeouts and tracing.
+        decide: the decision model, `systemone(base_url, api_key)` or your own client with your HTTP client, timeouts
+            and tracing. Without it, `questions` and `read` still work. To classify with a chat LLM, use `Judge`.
         thresholds: per tier id, the probability from which the tier applies. The tier gets a yes/no question, and
             the turn then lands inside its condition or outside it, whatever the axes' own answers. 1 turns it off.
             Tiers left out are read from their axes alone. No defaults: they belong to the model's calibration.
@@ -100,11 +98,8 @@ class SystemOne:
     def __init__(
         self,
         policy: Policy,
-        base_url: str | None = None,
-        api_key: str | None = None,
-        model: str | None = None,
-        *,
         decide: Decide | None = None,
+        *,
         thresholds: Mapping[str, float],
         remind: Mapping[str, float] | None = None,
         breach: float | None = None,
@@ -117,10 +112,6 @@ class SystemOne:
         self.breach = breach
         self.state = state
         self.examples = examples
-        if decide is None and base_url is not None:
-            if api_key is None:
-                raise ValueError("pass `api_key` with `base_url`")
-            decide = client(base_url, api_key, model)
         self.decide = decide
         if unknown := [t for t in self.thresholds if t not in policy.tiers]:
             raise ValueError(f"thresholds for unknown tiers: {', '.join(unknown)}")
@@ -258,7 +249,7 @@ class SystemOne:
     async def classify(self, conversation: Conversation, of: Of = "turn", hits: Sequence[Hit] = ()) -> Classification:
         """Classify the conversation's last turn (a `user` message) or its last response (an `assistant` one)."""
         if self.decide is None:
-            raise ValueError("SystemOne needs `base_url` and `api_key`, or `decide`, to classify")
+            raise ValueError("Classifier needs `decide` to classify, such as `systemone(base_url, api_key)`")
         convo = messages(conversation)
         last = "user" if of == "turn" else "assistant"
         if not convo or convo[-1].role != last:

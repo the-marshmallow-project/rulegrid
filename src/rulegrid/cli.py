@@ -18,14 +18,14 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from rulegrid.check import check
+from rulegrid.classifier import Classifier, systemone
 from rulegrid.diff import diff
 from rulegrid.evaluate import Dataset, evaluate
 from rulegrid.generate import generate
 from rulegrid.judge import Judge, openai_compatible
 from rulegrid.policy import Policy, PolicyError, load, load_structure, profiles
 from rulegrid.render import render
-from rulegrid.systemone import SystemOne
-from rulegrid.types import Classifier
+from rulegrid.types import ClassifierProtocol
 
 EXAMPLES = ("three_laws", "rbr")
 PROFILE_HELP = "a profile directory, its profile.yaml, or a policy directory with a single profile"
@@ -72,10 +72,10 @@ def _load_at(spec: str) -> Policy:
 
 def classifier(
     spec: str, thresholds: dict[str, float], breach: float = 0.5, examples: bool = True
-) -> Callable[[Policy], Classifier]:
+) -> Callable[[Policy], ClassifierProtocol]:
     """`systemone[:MODEL]`, `judge:MODEL`, or `module:attr`, a factory taking the policy.
 
-    `examples=False` keeps the policy's examples out of SystemOne's questions, to evaluate it on them.
+    `examples=False` keeps the policy's examples out of the `Classifier`'s questions, to evaluate it on them.
     """
     kind, _, model = spec.partition(":")
     needed = {
@@ -86,7 +86,8 @@ def classifier(
         raise SystemExit(f"--classifier {kind} needs {' and '.join(missing)} in the environment")
     if kind == "systemone":
         url, key = os.environ["RULEGRID_SYSTEMONE_URL"], os.environ["RULEGRID_SYSTEMONE_KEY"]
-        return lambda p: SystemOne(p, url, key, model or None, thresholds=thresholds, breach=breach, examples=examples)
+        decide = systemone(url, key, model or None)
+        return lambda p: Classifier(p, decide, thresholds=thresholds, breach=breach, examples=examples)
     if kind == "judge":
         url, key = os.environ["RULEGRID_LLM_URL"], os.environ["RULEGRID_LLM_KEY"]
         return lambda p: Judge(p, openai_compatible(url, key, model))
@@ -118,8 +119,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     e.add_argument("--data", help="a JSONL dataset")
     e.add_argument("--classifier", required=True, help="systemone[:MODEL], judge:MODEL or module:attr")
     e.add_argument("--json", action="store_true", help="the agreement per label as JSON")
-    e.add_argument("--breach", type=float, default=0.5, metavar="P", help="SystemOne's breach threshold")
-    e.add_argument("--threshold", action="append", default=[], metavar="TIER=P", help="SystemOne tiers")
+    e.add_argument("--breach", type=float, default=0.5, metavar="P", help="systemone's breach threshold")
+    e.add_argument("--threshold", action="append", default=[], metavar="TIER=P", help="systemone's tiers")
     args = parser.parse_args(argv)
 
     if args.command == "init":

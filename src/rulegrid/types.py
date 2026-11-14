@@ -123,7 +123,7 @@ class Assessment:
     compliance: Compliance
 
 
-class Classifier(Protocol):
+class ClassifierProtocol(Protocol):
     """Anything that classifies the last turn or the last response of a conversation on a policy's axes."""
 
     async def classify(

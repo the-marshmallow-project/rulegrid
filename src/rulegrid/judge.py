@@ -66,7 +66,7 @@ def _literal(ids: Sequence[str]) -> Any:
 
 
 class Judge:
-    """A `Classifier` over a chat LLM, which also `assess`es whole conversations.
+    """A `ClassifierProtocol` over a chat LLM, which also `assess`es whole conversations.
 
     Args:
         policy: the policy to judge against.

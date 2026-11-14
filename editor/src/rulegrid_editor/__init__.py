@@ -22,7 +22,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("profile", metavar="PROFILE", help=PROFILE_HELP)
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--classifier", help="the try panel's: systemone[:MODEL], judge:MODEL or module:attr")
-    parser.add_argument("--threshold", action="append", default=[], metavar="TIER=P", help="SystemOne tiers")
+    parser.add_argument("--threshold", action="append", default=[], metavar="TIER=P", help="systemone's tiers")
     args = parser.parse_args(argv)
     thresholds = {t: float(p) for t, p in (t.split("=") for t in args.threshold)}
     try:

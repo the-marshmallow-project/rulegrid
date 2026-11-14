@@ -11,7 +11,7 @@ rulegrid-editor PROFILE --classifier systemone:liquid/d1-ultra</pre></div>`;
 function Scores({ c, axis }) {
   const answer = c?.scores?.[axis.id];
   if (!answer?.probabilities) return c?.evidence?.[axis.id] ? html`<div class="scores">“${c.evidence[axis.id]}”</div>` : null;
-  // A score's levels run from the low end up, which on an ordered axis is its last value (see SystemOne.read).
+  // A score's levels run from the low end up, which on an ordered axis is its last value (see Classifier.read).
   const ids = axis.values.map((v) => v.id), last = ids.length - 1;
   const top = Object.entries(answer.probabilities).map(([k, p]) => [answer.type === "score" ? ids[last - k] : k, p]).sort((a, b) => b[1] - a[1]).slice(0, 3);
   return html`<div class="scores">${top.map(([k, p]) => `${k} ${p.toFixed(2)}`).join(" · ")}</div>`;
