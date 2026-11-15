@@ -218,7 +218,10 @@ class Row:
 
 @dataclass(frozen=True)
 class Result:
-    """A row read by a classifier. `checks` holds one `(label, agrees, detail)` per label, such as `turn.act`."""
+    """A row read by a classifier. `checks` holds one `(label, agrees, detail)` per label, such as `turn.act`.
+
+    `error` says why the classifier failed to read the row, which then has no reading and no check.
+    """
 
     row: Row
     turn: Classification | None
@@ -226,10 +229,11 @@ class Result:
     checks: tuple[tuple[str, bool, str], ...]
     prescription: Prescription | None = None
     compliance: Compliance | None = None
+    error: str | None = None
 
     @property
     def ok(self) -> bool:
-        return all(agrees for _, agrees, _ in self.checks)
+        return self.error is None and all(agrees for _, agrees, _ in self.checks)
 
 
 @dataclass(frozen=True)
@@ -260,7 +264,7 @@ class Report:
         return dict(sorted(counts.items()))
 
     def markdown(self) -> str:
-        """The report as Markdown: agreement per label, compliance per cell, each disagreement, each breach."""
+        """The report as Markdown: agreement per label, compliance per cell, each disagreement, breach and error."""
 
         def table(head: str, counts: dict[str, tuple[int, int]]) -> list[str]:
             ok, total = sum(c[0] for c in counts.values()), sum(c[1] for c in counts.values())
@@ -269,8 +273,10 @@ class Report:
                 f"| {k} | {n} of {t} | {n / t:.0%} |" for k, (n, t) in rows if t
             ]
 
-        failing = sum(not r.ok for r in self.results)
-        lines = [f"{len(self.results)} rows, {failing} with a disagreement.", ""]
+        failing = sum(not all(agrees for _, agrees, _ in r.checks) for r in self.results)
+        errors = [r for r in self.results if r.error is not None]
+        unread = f", {len(errors)} not read" if errors else ""
+        lines = [f"{len(self.results)} rows, {failing} with a disagreement{unread}.", ""]
         lines += table("Label agreeing", self.agreement())
         if audited := self.compliance():
             lines += ["", *table("Cell complying", audited)]
@@ -291,6 +297,9 @@ class Report:
             lines += [
                 f"- {row(r)}: " + "; ".join(f"{a.id} {a.detail}".rstrip() for a in c.articles) for r, c in breached
             ]
+        if errors:
+            lines += ["", "## Not read", ""]
+            lines += [f"- {row(r)}: {r.error}" for r in errors]
         return "\n".join(lines) + "\n"
 
 

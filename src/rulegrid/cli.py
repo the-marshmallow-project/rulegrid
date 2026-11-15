@@ -160,6 +160,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"rulegrid eval: {error}", file=sys.stderr)
         return 1
     print(json.dumps(report.agreement()) if args.json else report.markdown(), end="")
+    if args.json:  # the agreement leaves out the rows not read
+        for i, result in enumerate(report.results, 1):
+            if result.error is not None:
+                where = f"row {i} {result.row.source}".rstrip()
+                print(f"rulegrid eval: {where} not read: {result.error}", file=sys.stderr)
     return 0 if all(r.ok for r in report.results) else 1
 
 

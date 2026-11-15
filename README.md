@@ -86,7 +86,8 @@ rulegrid eval examples/rbr/profiles/default --classifier systemone:liquid/d1-ult
 rulegrid eval examples/three_laws/profiles/default --classifier judge:openai/gpt-6-luna
 ```
 
-Use `eval` without `--data` to run the classifier on the policy examples.
+Use `eval` without `--data` to run the classifier on the policy examples. The built-in clients retry timeouts,
+connection errors, 429s and 5xx with backoff; a row that still fails is reported as not read, and `eval` exits 1.
 
 
 ## Policy shape

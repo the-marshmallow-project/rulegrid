@@ -30,8 +30,11 @@ from rulegrid.types import (
 _FORBID = ConfigDict(extra="forbid")
 
 
-def openai_compatible(base_url: str, api_key: str, model: str, timeout: float = 120) -> Complete:
-    """A `Complete` callable for an OpenAI-compatible chat endpoint, such as `https://openrouter.ai/api/v1`."""
+def openai_compatible(base_url: str, api_key: str, model: str, timeout: float = 120, retries: int = 3) -> Complete:
+    """A `Complete` callable for an OpenAI-compatible chat endpoint, such as `https://openrouter.ai/api/v1`.
+
+    It retries a timeout, a dropped connection, a 429 or a 5xx `retries` times, with backoff.
+    """
     url = f"{base_url.rstrip('/')}/chat/completions"
 
     async def complete(chat: list[dict[str, str]], schema: type[BaseModel]) -> str:
@@ -43,7 +46,7 @@ def openai_compatible(base_url: str, api_key: str, model: str, timeout: float = 
                 "json_schema": {"name": schema.__name__, "schema": schema.model_json_schema(), "strict": True},
             },
         }
-        return (await _http.call(url, api_key, body, timeout))["choices"][0]["message"]["content"]
+        return (await _http.call(url, api_key, body, timeout, retries))["choices"][0]["message"]["content"]
 
     return complete
 

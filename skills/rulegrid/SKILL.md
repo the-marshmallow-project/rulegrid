@@ -176,8 +176,9 @@ rulegrid eval my_policy --data my_policy/audit.jsonl --classifier judge:openai/g
 `--classifier module:attr` takes your own: a callable from the policy to an object with
 `async classify(conversation, of="turn"|"response", hits=())`. A run prints nothing until it ends, which takes
 minutes for a few dozen rows. The report gives agreement per label, compliance per cell for audited rows, then one
-line per disagreement and per non-compliant row. `eval` exits 1 when any label disagrees, which is a result, not a
-crash.
+line per disagreement and per non-compliant row. The built-in clients retry timeouts, rate limits and server errors;
+a row that still fails is listed under "Not read" and the other rows are kept. `eval` exits 1 when any label disagrees
+or any row is not read, which is a result, not a crash.
 
 For each disagreement, decide whether the label, the classifier, or a definition is wrong, and fix definitions in the
 profile. An LLM judge reads a few rows differently from one run to the next, so run each version at least twice and

@@ -177,6 +177,10 @@ async def evaluate(policy: Policy, data: Iterable[Row], classifier: ClassifierPr
     Rows with a response and no response labels are audited instead: their compliance is computed from the
     classifier's readings, which is how recorded conversations are checked.
 
+    A row the classifier fails to read, such as after its client's retries, gets its error in the report, and the
+    other rows are still read. When the first `concurrency` rows read all fail, the classifier or its endpoint is
+    broken rather than a row, and the first error raises.
+
     Raises:
         ValueError: before reading any row, when labels name an axis, a value or a prohibition the policy doesn't
             define.
@@ -191,12 +195,27 @@ async def evaluate(policy: Policy, data: Iterable[Row], classifier: ClassifierPr
     if problems:
         raise ValueError("labels the policy doesn't define:\n" + "\n".join(problems))
     semaphore = asyncio.Semaphore(concurrency)
+    read = failed = 0
 
     async def one(row: Row) -> Result:
+        nonlocal read, failed
         async with semaphore:
-            return await _read(policy, row, classifier)
+            try:
+                result = await _read(policy, row, classifier)
+            except Exception as error:
+                failed += 1
+                if not read and failed >= min(concurrency, len(rows)):
+                    raise
+                return Result(row, None, None, (), error=f"{type(error).__name__}: {error}")
+            read += 1
+            return result
 
-    return Report(policy.digest, tuple(await asyncio.gather(*map(one, rows))))
+    try:
+        async with asyncio.TaskGroup() as group:
+            tasks = [group.create_task(one(row)) for row in rows]
+    except ExceptionGroup as errors:  # stops the other rows, and raises the first error alone, as before
+        raise errors.exceptions[0] from None
+    return Report(policy.digest, tuple(t.result() for t in tasks))
 
 
 async def compare(

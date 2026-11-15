@@ -1,7 +1,11 @@
 """The contract callers rely on, on the example policies. Kept minimal on purpose."""
 
 import gc
+import json
 import shutil
+import threading
+from collections import Counter
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -181,3 +185,51 @@ def test_init_copies_an_example_policy_that_checks(tmp_path: Path) -> None:
     # A policy directory with a single profile stands for that profile.
     assert main(["init", str(tmp_path / "q")]) == 0
     assert rg.load(tmp_path / "q").profile_dir == tmp_path / "q/profiles/default"
+
+
+def test_eval_retries_transient_errors_and_reports_rows_still_failing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    attempts: Counter[str] = Counter()
+
+    class SystemOne(BaseHTTPRequestHandler):
+        """Fails the turn `flaky` once and the turn `down` every time, with the 5xx a gateway answers."""
+
+        def do_POST(self) -> None:
+            turn = json.loads(self.rfile.read(int(self.headers["Content-Length"])))["state"]["messages"][-1]["content"]
+            attempts[turn] += 1
+            failing = turn == "down" or (turn == "flaky" and attempts[turn] == 1)
+            body = b"gateway timeout" if failing else json.dumps({"answers": {}}).encode()
+            self.send_response(504 if failing else 200)
+            self.send_header("Retry-After", "0")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), SystemOne)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("RULEGRID_SYSTEMONE_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setenv("RULEGRID_SYSTEMONE_KEY", "key")
+    data = tmp_path / "cases.jsonl"
+    # Unanswered, act reads as its first value, ORDER.
+    rows = [
+        {"messages": [{"role": "user", "content": t}], "turn_values": {"act": "ORDER"}}
+        for t in ("calm", "flaky", "down")
+    ]
+    data.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    try:
+        assert main(["eval", str(THREE_LAWS), "--data", str(data), "--classifier", "systemone:m"]) == 1
+        report = capsys.readouterr().out
+        assert report.startswith("3 rows, 0 with a disagreement, 1 not read.")
+        assert "| turn.act | 2 of 2 | 100% |" in report
+        assert f"- 'down': HTTPStatusError: 504 from http://127.0.0.1:{server.server_port}/v1/systemone" in report
+        assert attempts == {"calm": 1, "flaky": 2, "down": 4}
+        # When every row fails, the endpoint is what fails: the run stops with its error.
+        data.write_text(json.dumps(rows[2]) + "\n" + json.dumps(rows[2]) + "\n")
+        assert main(["eval", str(THREE_LAWS), "--data", str(data), "--classifier", "systemone:m"]) == 1
+        assert capsys.readouterr().err.startswith("rulegrid eval: 504 from")
+    finally:
+        server.shutdown()
+        server.server_close()

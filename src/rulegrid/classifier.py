@@ -43,8 +43,10 @@ def default_state(conversation: Sequence[Message], hits: Sequence[Hit]) -> State
     }
 
 
-def systemone(base_url: str, api_key: str, model: str | None = None, timeout: float = 30) -> Decide:
+def systemone(base_url: str, api_key: str, model: str | None = None, timeout: float = 30, retries: int = 3) -> Decide:
     """A `Decide` callable for the System One endpoint under `base_url`, such as `https://api.typesafe.ai`.
+
+    It retries a timeout, a dropped connection, a 429 or a 5xx `retries` times, with backoff.
 
     Without `model`, it asks `GET {base_url}/v1/models` once and takes the endpoint's model when it serves exactly one.
     """
@@ -54,13 +56,13 @@ def systemone(base_url: str, api_key: str, model: str | None = None, timeout: fl
     async def decide(state: State, questions: Mapping[str, Question]) -> Mapping[str, Answer]:
         nonlocal resolved
         if resolved is None:
-            listed = await _http.call(f"{base}/v1/models", api_key, timeout=timeout)
+            listed = await _http.call(f"{base}/v1/models", api_key, timeout=timeout, retries=retries)
             names = [m.get("name") or m.get("id") for m in listed.get("models") or listed.get("data") or []]
             if len(names) != 1:
                 raise ValueError(f"{base} serves {len(names)} models, pass one as `model`: {', '.join(names)}")
             resolved = names[0]
         body = {"model": resolved, "state": state, "questions": dict(questions)}
-        return (await _http.call(f"{base}/v1/systemone", api_key, body, timeout))["answers"]
+        return (await _http.call(f"{base}/v1/systemone", api_key, body, timeout, retries))["answers"]
 
     return decide
 
