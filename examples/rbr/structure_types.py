@@ -26,7 +26,7 @@ class ResponseValues(TypedDict):
     follow_up: FollowUp
 
 
-STRUCTURE_DIGEST = "sha256:8a178c33f88e2c643cb9cb2bba6c6a1898cef38199adb64d56b1a4670e8ae558"
+STRUCTURE_DIGEST = "sha256:1d3a55800da73090ed0b794180247f0190158d9aec6fa0f040f7ce2479be67d9"
 
 
 def load(path: str | Path) -> rulegrid.Policy[TurnValues, ResponseValues]:
