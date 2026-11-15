@@ -1,6 +1,6 @@
 [project]
 name = "rulegrid"
-version = "0.2.0"
+version = "0.3.0"
 description = "Behavior policies as code: classify a turn, prescribe a response, check compliance."
 readme = "README.md"
 license = "MIT"
