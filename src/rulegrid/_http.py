@@ -37,7 +37,8 @@ def _call(url: str, api_key: str, payload: Any | None, timeout: float) -> Any:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return json.load(response)
     except urllib.error.HTTPError as e:
-        raise HTTPStatusError(url, e) from None
+        with e:
+            raise HTTPStatusError(url, e) from None
 
 
 def _transient(error: Exception) -> bool:
