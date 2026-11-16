@@ -84,9 +84,9 @@ guide the agent where no rule applies.
 
 | Term | Definition | In code and files |
 | --- | --- | --- |
-| **Classifier** | Turns the policy into questions, has a decision model answer them with probabilities, and applies thresholds to pick one value per axis. Anything else that classifies a turn or a response on a policy's axes, such as a judge, can stand in for it. | `Classifier`, `ClassifierProtocol` |
+| **Classifier** | Turns the policy into questions, has a decision model answer them with probabilities, and applies thresholds to pick one value per axis, or several on a multi-valued axis. Anything else that classifies a turn or a response on a policy's axes, such as a judge, can stand in for it. | `Classifier`, `ClassifierProtocol` |
 | **System One** | An API through which a decision model answers typed questions with probabilities. The classifier calls it through `systemone`, or through your own client; "decision model" names that family of models, not the role. | `systemone`, `Decide` |
-| **Threshold** | The probability from which a tier applies, a prohibition is reminded, or a breach counts. | `thresholds`, `remind`, `breach` |
+| **Threshold** | The probability from which a tier applies, a prohibition is reminded, a breach counts, or a response takes a value of a multi-valued axis besides its most probable one. | `thresholds`, `remind`, `breach`, `multi` |
 | **Judge** | A chat LLM that assesses whole conversations, with evidence, and classifies too. | `Judge` |
 | **Concern** | Words of a response that a judge weighs against a prohibition before it counts them as a breach or not. | `concerns` in the judge's answer |
 | **Assessment** | A judge's reading of one exchange: both classifications, its rationale, and the computed prescription and compliance. | `Assessment` |

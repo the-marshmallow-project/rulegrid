@@ -189,7 +189,13 @@ question and the axes disagree: a lower threshold catches more turns in the tier
 without a threshold is read from its axes alone. Good values depend on the model's calibration, so rulegrid has no
 defaults: `Classifier` requires `thresholds=`, `{}` for none, and the command line takes none unless given
 `--threshold TIER=P`. Likewise `breach=P` asks whether the response breaches each prohibition, counting it from that
-probability; `rulegrid eval --breach` defaults to 0.5. Anything with an async `classify`, such as a `Judge`, works
+probability; `rulegrid eval --breach` defaults to 0.5.
+
+A multi-valued response axis is asked as one choice, and takes its most probable value. Given `multi={AXIS: P}`, or
+`--multi AXIS=P`, each of its values gets a yes/no question instead, and the response takes the most probable value
+plus every other one from P, so that a response that refuses and then corrects reads as both, as a judge would quote
+them. A doubt between equally probable values settles on the earlier. Decision models tend to answer yes to several
+descriptions of one act, so P is usually well above 0.5. Anything with an async `classify`, such as a `Judge`, works
 wherever a classifier does: its type is `rulegrid.types.ClassifierProtocol`.
 
 Lexicon entries match whole words with case, accent and spacing normalization. Put inflections and aliases in an

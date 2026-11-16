@@ -7,6 +7,7 @@ answers needs no model either: `questions` and `read` are pure, and `classify` s
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal
 
@@ -81,7 +82,7 @@ def _criterion(value: Value, of: Of, examples: bool) -> dict[str, Any]:
 
 class Classifier:
     """Turns the policy into questions, has a decision model answer them with probabilities, and applies thresholds to
-    pick one value per axis.
+    pick one value per axis, or several on a multi-valued axis given a `multi` threshold.
 
     Args:
         policy: the policy whose axes to classify on.
@@ -92,6 +93,9 @@ class Classifier:
             Tiers left out are read from their axes alone. No defaults: they belong to the model's calibration.
         remind: per prohibition id, the probability from which a turn reminds it.
         breach: the probability from which a response breaches a prohibition; None asks no breach question.
+        multi: per multi-valued response axis id, the probability from which a response takes a value besides its
+            most probable one. Each of the axis's values gets a yes/no question. Axes left out are asked as one
+            choice and take one value.
         state: builds the model's state from the conversation and the hits, `default_state` by default.
         examples: whether a value's criteria carry its examples. Turn it off to evaluate the classifier on the
             policy's own examples, which it would otherwise be shown.
@@ -105,6 +109,7 @@ class Classifier:
         thresholds: Mapping[str, float],
         remind: Mapping[str, float] | None = None,
         breach: float | None = None,
+        multi: Mapping[str, float] | None = None,
         state: Callable[[Sequence[Message], Sequence[Hit]], State] = default_state,
         examples: bool = True,
     ):
@@ -112,6 +117,7 @@ class Classifier:
         self.thresholds = dict(thresholds)
         self.remind = dict(remind or {})
         self.breach = breach
+        self.multi = dict(multi or {})
         self.state = state
         self.examples = examples
         self.decide = decide
@@ -119,6 +125,8 @@ class Classifier:
             raise ValueError(f"thresholds for unknown tiers: {', '.join(unknown)}")
         if unknown := [p for p in self.remind if p not in policy.prohibitions]:
             raise ValueError(f"remind of unknown prohibitions: {', '.join(unknown)}")
+        if single := [a for a in self.multi if a not in policy.response_axes or not policy.response_axes[a].multi]:
+            raise ValueError(f"multi for axes that are not multi-valued response axes: {', '.join(single)}")
         for tier_id in self.thresholds:
             tier = policy.tiers[tier_id]
             first = next(iter(tier.condition))
@@ -165,6 +173,19 @@ class Classifier:
         for axis in axes.values():
             if axis.id in settled:
                 continue
+            if axis.id in self.multi:
+                for value in axis.values:
+                    criterion = _criterion(value, of, self.examples)
+                    described = f"{value.label}: {criterion.pop('what')}" + "".join(
+                        f"\n{k.capitalize()}: {v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)}"
+                        for k, v in criterion.items()
+                    )
+                    asked[f"{axis.id}/{value.id}"] = {
+                        "type": "noul",
+                        "instructions": f"{about}{axis.definition} Does {subject}, do what the value below "
+                        f"describes, even if another part of it does something else? {described}",
+                    }
+                continue
             instructions = f"{about}Which value best describes {subject}? {axis.definition}"
             if of == "turn" and p.lexicons:
                 instructions += " `hits` lists the words of that message found in a word list, with their meaning."
@@ -203,7 +224,9 @@ class Classifier:
         probabilities: dict[str, dict[str, float]] = {}
         for axis in axes.values():
             answer = answers.get(axis.id)
-            if answer is None:
+            if axis.id in self.multi:
+                probabilities[axis.id] = {v: answers.get(f"{axis.id}/{v}", {}).get("noul", 0.0) for v in axis.ids}
+            elif answer is None:
                 probabilities[axis.id] = dict.fromkeys(axis.ids, 0.0)
             elif answer["type"] == "score":
                 last = len(axis.ids) - 1
@@ -229,8 +252,13 @@ class Classifier:
                 for key, covered in self.policy.tiers[tier_id].condition.items():
                     values.setdefault(key, best(key, covered))
         for axis in axes.values():
-            if axis.id not in values:
-                value = best(axis.id, axis.ids)
+            if axis.id in values:
+                continue
+            value = best(axis.id, axis.ids)
+            if axis.id in self.multi:
+                more = (v for v, p in probabilities[axis.id].items() if p >= self.multi[axis.id])
+                values[axis.id] = frozenset({value, *more})
+            else:
                 values[axis.id] = frozenset({value}) if axis.multi else value
 
         def above(prefix: str, threshold: Callable[[str], float]) -> list[str]:

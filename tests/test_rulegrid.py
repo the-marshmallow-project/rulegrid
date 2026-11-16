@@ -131,6 +131,28 @@ def test_classifier_tier_threshold_keeps_turns_inside_or_outside_the_condition(r
     assert classifier.questions("response")["handling"]["type"] == "choice"
 
 
+def test_multi_threshold_reads_every_value_from_it_besides_the_most_probable(robot: rg.Policy) -> None:
+    classifier = rg.Classifier(robot, thresholds={}, multi={"handling": 0.8})
+    questions = classifier.questions("response")
+    assert [k for k in questions if k.startswith("handling")] == [
+        f"handling/{v}" for v in robot.response_axes["handling"].ids
+    ]
+    assert questions["handling/OBEY"]["type"] == "noul"
+
+    def read(**yes: float) -> frozenset[str]:
+        answers: dict[str, Answer] = {f"handling/{v}": {"type": "noul", "noul": p} for v, p in yes.items()}
+        return classifier.read(answers, "response").values["handling"]  # type: ignore[return-value]
+
+    # The most probable value counts below the threshold; the others count from it, boundary included.
+    assert read(PROTECT=0.3, ANSWER=0.6) == {"ANSWER"}
+    assert read(PROTECT=0.9, OBEY=0.8, PRESERVE=0.79) == {"PROTECT", "OBEY"}
+    # A doubt settles on the earlier value of the ordered axis, and so does no answer.
+    assert read(PRESERVE=0.5, OBEY=0.5) == {"OBEY"}
+    assert read() == {"PROTECT"}
+    with pytest.raises(ValueError, match="not multi-valued response axes: danger"):
+        rg.Classifier(robot, thresholds={}, multi={"danger": 0.8})
+
+
 def test_breach_threshold_includes_its_boundary_and_can_be_disabled(robot: rg.Policy) -> None:
     for threshold, probability, breaches in [(0.0, 0.0, 1), (0.4, 0.39, 0), (0.4, 0.4, 1), (None, 1.0, 0)]:
         classifier = rg.Classifier(robot, thresholds={}, breach=threshold)
@@ -232,6 +254,9 @@ def test_eval_retries_transient_errors_and_reports_rows_still_failing(
         data.write_text(json.dumps(rows[2]) + "\n" + json.dumps(rows[2]) + "\n")
         assert main(["eval", str(THREE_LAWS), "--data", str(data), "--classifier", "systemone:m"]) == 1
         assert capsys.readouterr().err.startswith("rulegrid eval: 504 from")
+        # --multi reaches the classifier, which checks it before asking anything.
+        assert main(["eval", str(THREE_LAWS), "--classifier", "systemone:m", "--multi", "handling=0.8"]) == 1
+        assert "not multi-valued response axes: handling" in capsys.readouterr().err
     finally:
         server.shutdown()
         server.server_close()
