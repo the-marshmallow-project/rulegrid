@@ -71,9 +71,15 @@ def _load_at(spec: str) -> Policy:
 
 
 def classifier(
-    spec: str, thresholds: dict[str, float], breach: float = 0.5, examples: bool = True
+    spec: str,
+    thresholds: dict[str, float],
+    breach: float = 0.5,
+    examples: bool = True,
+    multi: dict[str, float] | None = None,
 ) -> Callable[[Policy], ClassifierProtocol]:
     """`systemone[:MODEL]`, `judge:MODEL`, or `module:attr`, a factory taking the policy.
+
+    `thresholds`, `breach` and `multi` are the `Classifier`'s; the judge and your own classifiers take none.
 
     `examples=False` keeps the policy's examples out of the `Classifier`'s questions, to evaluate it on them.
     """
@@ -87,7 +93,7 @@ def classifier(
     if kind == "systemone":
         url, key = os.environ["RULEGRID_SYSTEMONE_URL"], os.environ["RULEGRID_SYSTEMONE_KEY"]
         decide = systemone(url, key, model or None)
-        return lambda p: Classifier(p, decide, thresholds=thresholds, breach=breach, examples=examples)
+        return lambda p: Classifier(p, decide, thresholds=thresholds, breach=breach, multi=multi, examples=examples)
     if kind == "judge":
         url, key = os.environ["RULEGRID_LLM_URL"], os.environ["RULEGRID_LLM_KEY"]
         return lambda p: Judge(p, openai_compatible(url, key, model))
@@ -121,11 +127,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     e.add_argument("--json", action="store_true", help="the agreement per label as JSON")
     e.add_argument("--breach", type=float, default=0.5, metavar="P", help="systemone's breach threshold")
     e.add_argument("--threshold", action="append", default=[], metavar="TIER=P", help="systemone's tiers")
+    e.add_argument(
+        "--multi", action="append", default=[], metavar="AXIS=P", help="systemone's multi-valued response axes"
+    )
     args = parser.parse_args(argv)
 
     if args.command == "init":
         return _init(args.name, args.example)
     thresholds = {t: float(p) for t, p in (t.split("=") for t in getattr(args, "threshold", []))}
+    multi = {a: float(p) for a, p in (a.split("=") for a in getattr(args, "multi", []))}
     try:
         if args.command == "diff":
             print(diff(_load_at(args.old), _load_at(args.new)))
@@ -154,7 +164,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         data = Dataset.load(args.data) if args.data else Dataset.from_policy(policy)
         # On the policy's own examples, the questions leave them out: a classifier shown an example would only echo it.
-        implementation = classifier(args.classifier, thresholds, args.breach, examples=bool(args.data))(policy)
+        implementation = classifier(args.classifier, thresholds, args.breach, bool(args.data), multi)(policy)
         report = asyncio.run(evaluate(policy, data, implementation))
     except (OSError, RuntimeError, ValueError) as error:  # unreadable data, unknown labels, a failing endpoint
         print(f"rulegrid eval: {error}", file=sys.stderr)
