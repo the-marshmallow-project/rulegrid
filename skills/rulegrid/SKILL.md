@@ -86,7 +86,10 @@ everything the profile still lacks. The fields, detailed in the README's
   on the value the agent takes unprompted, and examples that carry a `response`.
 - `tiers.id`: `label`, `definition` (when it applies, for the classifier), `instruction` (what the agent does, for the
   agent), `cells` nested one level per key axis in the structure's order. A cell maps response axes to allowed values
-  and may hold `examples`; `{}` allows anything the prohibitions allow.
+  and may hold `examples`; `{}` allows anything the prohibitions allow. When the source names what must never happen in
+  a situation but tolerates more than it prescribes, write that axis `{allowed: [...], forbidden: [...]}`: the
+  values neither allowed nor forbidden are then open, and a response taking one deviates instead of breaching. Keep the
+  plain list for a strict axis.
 - `prohibitions.ID`: `text`, optional `group`, `valid` and `invalid` examples with responses.
 - Every example: `turn`, optional `response`, `context` (prior messages, as `{role: user|assistant, content: ...}`),
   and `source`.
@@ -175,8 +178,8 @@ rulegrid eval my_policy --data my_policy/audit.jsonl --classifier judge:openai/g
 
 `--classifier module:attr` takes your own: a callable from the policy to an object with
 `async classify(conversation, of="turn"|"response", hits=())`. A run prints nothing until it ends, which takes
-minutes for a few dozen rows. The report gives agreement per label, compliance per cell for audited rows, then one
-line per disagreement and per non-compliant row. The built-in clients retry timeouts, rate limits and server errors;
+minutes for a few dozen rows. The report gives agreement per label, per cell how many audited rows comply, deviate
+and breach, then one line per disagreement, per breaching row and per deviating row. The built-in clients retry timeouts, rate limits and server errors;
 a row that still fails is listed under "Not read" and the other rows are kept. `eval` exits 1 when any label disagrees
 or any row is not read, which is a result, not a crash.
 
@@ -188,4 +191,4 @@ error: after two rounds, report it as such.
 ## 7. Report
 
 Tell the user: the policy directory, the open questions from `conversion.md` with the defaults you chose, and, with a
-dataset, the eval tables, the non-compliant rows, and what you changed because of them.
+dataset, the eval tables, the breaching and deviating rows, and what you changed because of them.

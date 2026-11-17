@@ -1,6 +1,6 @@
 // The try panel: where a turn and a response land, what the policy prescribes and nudges, and whether it complies.
 import { useRef, useState } from "preact/hooks";
-import { Id, Ref, S, ValueRef, html, tierNumber, tierOf } from "./ui.js";
+import { Allowed, Id, OUTCOMES, Ref, S, ValueRef, html, tierNumber, tierOf } from "./ui.js";
 
 const NoClassifier = () => html`<div class="note">No classifier: set the values by hand, or restart the editor with one, such as:
 <pre>export RULEGRID_SYSTEMONE_URL=https://openrouter.ai/api
@@ -23,7 +23,7 @@ const Questions = ({ c }) => {
 };
 
 // One row per axis: the value read, which the page can set by hand.
-function Axes({ axes, c, set, failed = new Set() }) {
+function Axes({ axes, c, set, failed = new Map() }) {
   return html`<table>${axes.map((axis) => {
     const value = c?.values?.[axis.id];
     let control;
@@ -35,7 +35,7 @@ function Axes({ axes, c, set, failed = new Set() }) {
       control = html`<select value=${value ?? ""} onChange=${(e) => set(axis.id, e.target.value || undefined)}>
         <option value="">—</option>${axis.values.map((v) => html`<option value=${v.id}>${v.id} · ${v.label}</option>`)}</select>`;
     }
-    return html`<tr><th class=${failed.has(axis.id) ? "ko" : ""}><${Ref} kind="axis" id=${axis.id} /></th><td>${control}<${Scores} c=${c} axis=${axis} /></td></tr>`;
+    return html`<tr><th class=${failed.has(axis.id) ? OUTCOMES[failed.get(axis.id)].cls : ""}><${Ref} kind="axis" id=${axis.id} /></th><td>${control}<${Scores} c=${c} axis=${axis} /></td></tr>`;
   })}</table>`;
 }
 
@@ -75,7 +75,7 @@ export function Try({ attempt, setAttempt, classifier, run }) {
 
   const a = attempt, p = a?.prescription, unset = a?.missing?.length > 0;
   const articles = a?.compliance?.articles || [];
-  const failed = new Set(articles.filter((x) => x.kind === "cell").map((x) => x.detail.split(" ")[0]));
+  const failed = new Map(articles.filter((x) => x.kind === "cell").map((x) => [x.detail.split(" ")[0], x.outcome]));
   return html`<aside>
     <textarea ref=${turn} rows="3" placeholder="A user's turn" aria-label="User's turn" onKeyDown=${onKeyDown} onInput=${onInput} />
     <textarea ref=${response} rows="2" placeholder="The agent's response (optional)" aria-label="Agent's response" onKeyDown=${onKeyDown} />
@@ -85,7 +85,7 @@ export function Try({ attempt, setAttempt, classifier, run }) {
     ${error && html`<p class="error">${error}</p>`}
     ${!classifier && html`<${NoClassifier} />`}
     ${a && html`<div class="compliance">
-      ${a.compliance && html`<span class=${"pill " + (a.compliance.ok ? "ok" : "ko")}>${a.compliance.ok ? "Complies" : "Does not comply"}</span> `}
+      ${a.compliance && html`<span class=${"pill " + OUTCOMES[a.compliance.outcome].cls}>${OUTCOMES[a.compliance.outcome].label}</span> `}
       ${unset ? html`<span class="muted">Set ${a.missing.join(", ")} to see where the turn lands.</span>`
         : p ? html`Tier ${tierNumber(p.tier)}: ${tierOf(p.tier)?.label}, cell <${Ref} kind="cell" id=${p.cell}>${p.cell}<//>` : "No tier applies"}
       ${articles.length > 0 && html`<ul>${articles.map((x) => html`<li>${x.kind === "cell" ? x.detail : html`breaches <${Ref} kind="prohibition" id=${x.id} />`}</li>`)}</ul>`}
@@ -99,7 +99,7 @@ export function Try({ attempt, setAttempt, classifier, run }) {
     ${a && !unset && html`
       <h3>Prescription</h3>
       ${!p ? html`<p class="muted">Only the prohibitions constrain the response.</p>`
-        : Object.keys(p.allowed).length ? Object.entries(p.allowed).map(([axis, ids]) => html`<div><${Ref} kind="axis" id=${axis} />: ${ids.map((id, i) => html`${i > 0 && " or "}<${ValueRef} axis=${axis} id=${id} />`)}</div>`)
+        : Object.keys(p.allowed).length ? html`<div><${Allowed} cell=${p} /></div>`
         : html`<p class="muted">Any value: only the prohibitions apply.</p>`}
       <h3>Nudge</h3>
       ${a.nudge ? html`<pre class="nudge">${a.nudge}</pre>` : html`<p class="muted">None: the agent would respond right unprompted.</p>`}`}

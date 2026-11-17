@@ -334,7 +334,7 @@
               "required": [
                 "SELF_HARM_RISK"
               ],
-              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -492,7 +492,7 @@
                 "HATE",
                 "SELF_HARM"
               ],
-              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -755,43 +755,166 @@
       "additionalProperties": false,
       "properties": {
         "handling": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "COMPLY",
-              "HARD_REFUSE",
-              "SUPPORT",
-              "SUPPORT_AND_DECLINE",
-              "DEFLECT"
-            ]
-          },
-          "minItems": 1,
-          "uniqueItems": true
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "COMPLY",
+                  "HARD_REFUSE",
+                  "SUPPORT",
+                  "SUPPORT_AND_DECLINE",
+                  "DEFLECT"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "COMPLY",
+                      "HARD_REFUSE",
+                      "SUPPORT",
+                      "SUPPORT_AND_DECLINE",
+                      "DEFLECT"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "minItems": 1,
+                  "description": "The values a response may take."
+                },
+                "forbidden": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "COMPLY",
+                      "HARD_REFUSE",
+                      "SUPPORT",
+                      "SUPPORT_AND_DECLINE",
+                      "DEFLECT"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "description": "The values a response must never take, `[]` for none. The values neither allowed nor forbidden are open: the principles decide."
+                }
+              },
+              "required": [
+                "allowed",
+                "forbidden"
+              ]
+            }
+          ]
         },
         "referral": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "NONE",
-              "GENTLE",
-              "URGENT",
-              "RESOURCES"
-            ]
-          },
-          "minItems": 1,
-          "uniqueItems": true
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "NONE",
+                  "GENTLE",
+                  "URGENT",
+                  "RESOURCES"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "NONE",
+                      "GENTLE",
+                      "URGENT",
+                      "RESOURCES"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "minItems": 1,
+                  "description": "The values a response may take."
+                },
+                "forbidden": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "NONE",
+                      "GENTLE",
+                      "URGENT",
+                      "RESOURCES"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "description": "The values a response must never take, `[]` for none. The values neither allowed nor forbidden are open: the principles decide."
+                }
+              },
+              "required": [
+                "allowed",
+                "forbidden"
+              ]
+            }
+          ]
         },
         "follow_up": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "STOP",
-              "ASK",
-              "MORE"
-            ]
-          },
-          "minItems": 1,
-          "uniqueItems": true
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "STOP",
+                  "ASK",
+                  "MORE"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "STOP",
+                      "ASK",
+                      "MORE"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "minItems": 1,
+                  "description": "The values a response may take."
+                },
+                "forbidden": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "STOP",
+                      "ASK",
+                      "MORE"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "description": "The values a response must never take, `[]` for none. The values neither allowed nor forbidden are open: the principles decide."
+                }
+              },
+              "required": [
+                "allowed",
+                "forbidden"
+              ]
+            }
+          ]
         },
         "examples": {
           "type": "array",
@@ -801,7 +924,7 @@
           "description": "Exchanges in this cell."
         }
       },
-      "description": "Per response axis, the values a response may take; an axis left out allows any."
+      "description": "Per response axis, the values a response may take, every other one forbidden; or `{allowed, forbidden}`, which leaves the others open. An axis left out allows any value."
     }
   }
 }

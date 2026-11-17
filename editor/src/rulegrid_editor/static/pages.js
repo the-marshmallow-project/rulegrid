@@ -103,17 +103,30 @@ export function Tier({ id, cell, policy, data, schemas, edit, attempt }) {
 function Cell({ id, root, data, edit }) {
   const at = ["tiers", ...id.split("/").flatMap((k, i) => (i ? [k] : [k, "cells"]))];
   const cell = at.reduce((n, k) => n?.[k], data) || {};
-  const toggle = (axis, v, on) => {
-    const now = new Set(cell[axis.id] || []);
-    on ? now.add(v) : now.delete(v);
-    edit([...at, axis.id], now.size ? axis.ids.filter((x) => now.has(x)) : null);
+  // An axis's rule as {allowed, forbidden}: forbidden is null in the short form, which forbids every value not allowed.
+  const rule = (axis) => {
+    const r = cell[axis.id];
+    return Array.isArray(r) ? { allowed: r, forbidden: null } : { allowed: r?.allowed || [], forbidden: r ? r.forbidden || [] : null };
   };
+  const put = (axis, allowed, forbidden) => {
+    const order = (ids) => axis.values.map((x) => x.id).filter((x) => ids.includes(x));
+    if (!allowed.length) return edit([...at, axis.id], null);
+    edit([...at, axis.id], forbidden === null ? order(allowed) : { allowed: order(allowed), forbidden: order(forbidden) });
+  };
+  const flip = (ids, v, on) => (on ? [...ids, v] : ids.filter((x) => x !== v));
+  const choices = (axis, checked, disabled, onChange) => axis.values.map((v) => html`<label title=${`${v.label}: ${v.definition}`}><input type="checkbox" checked=${checked(v.id)} disabled=${disabled(v.id)} onChange=${(e) => onChange(v.id, e.target.checked)} /> ${v.id}</label>`);
   return html`<div class="card" id=${`def-cell-${id}`}>
     <h3>Cell <${Id}>${id}<//></h3>
-    <p class="muted">An axis with nothing checked allows any value.</p>
-    ${S.policy.response_axes.map((axis) => html`<div class="field"><label><${Ref} kind="axis" id=${axis.id} /></label><div class="choices">
-      ${axis.values.map((v) => html`<label title=${`${v.label}: ${v.definition}`}><input type="checkbox" checked=${(cell[axis.id] || []).includes(v.id)} onChange=${(e) => toggle({ ...axis, ids: axis.values.map((x) => x.id) }, v.id, e.target.checked)} /> ${v.id}</label>`)}
-    </div></div>`)}
+    <p class="muted">An axis with nothing allowed allows any value. With other values open, only the forbidden ones breach.</p>
+    ${S.policy.response_axes.map((axis) => {
+      const { allowed, forbidden } = rule(axis);
+      return html`<div class="field"><label><${Ref} kind="axis" id=${axis.id} /></label><div class="choices">
+        <span class="muted">allowed</span> ${choices(axis, (v) => allowed.includes(v), () => false, (v, on) => put(axis, flip(allowed, v, on), forbidden && forbidden.filter((x) => x !== v)))}
+      </div>
+      ${allowed.length > 0 && html`<div class="choices"><label><input type="checkbox" checked=${forbidden !== null} onChange=${(e) => put(axis, allowed, e.target.checked ? [] : null)} /> leave the other values open</label></div>`}
+      ${forbidden !== null && html`<div class="choices"><span class="never">forbidden</span> ${choices(axis, (v) => forbidden.includes(v), (v) => allowed.includes(v), (v, on) => put(axis, allowed, flip(forbidden, v, on)))}</div>`}
+      </div>`;
+    })}
     <${ObjectField} schema=${schemaAt(root, at)} root=${root} value=${cell} at=${at} edit=${edit} omit=${S.policy.response_axes.map((a) => a.id)} />
   </div>`;
 }

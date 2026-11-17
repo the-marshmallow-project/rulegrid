@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import weakref
 from collections.abc import Collection, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import product
 from pathlib import Path
 from typing import Annotated, Any, Generic, Literal, Self, TypeVar
@@ -127,7 +127,8 @@ class TierFile(_File):
     instruction: str = Field(description="What the agent does then, for the agent.")
     cells: dict[str, Any] = Field(
         description="One level of keys per key axis, in the structure's order, down to a cell: per response axis,"
-        " the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+        " the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`."
+        " `{}` leaves only the prohibitions."
     )
 
 
@@ -225,12 +226,17 @@ class Axis:
 
 @dataclass(frozen=True)
 class Cell:
-    """One rule: per response axis, the values a response may take (an axis left out allows any), and examples."""
+    """One rule: per response axis, the values a response may take (an axis left out allows any), and examples.
+
+    `open` lists, per axis, the values the cell neither allows nor forbids: an axis written `{allowed, forbidden}`
+    leaves the others open. On an axis absent from `open`, every value not allowed is forbidden.
+    """
 
     id: str
     position: Mapping[str, str]
     allowed: Mapping[str, tuple[str, ...]]
     examples: tuple[Example, ...] = ()
+    open: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -639,11 +645,12 @@ def _cell(
         problems.append(Problem(where, "a cell is a mapping of response axes to allowed values, `{}` for none"))
         node = {}
     allowed: dict[str, tuple[str, ...]] = {}
+    open_: dict[str, tuple[str, ...]] = {}
     examples: tuple[Example, ...] = ()
-    for key, values in node.items():
+    for key, rule in node.items():
         if key == "examples":
             try:
-                examples = tuple(map(_example, TypeAdapter(list[ExampleFile]).validate_python(values)))
+                examples = tuple(map(_example, TypeAdapter(list[ExampleFile]).validate_python(rule)))
             except ValidationError as e:
                 problems += _validation(f"{where}.examples", e)
             continue
@@ -651,16 +658,39 @@ def _cell(
         if axis is None:
             problems.append(Problem(where, f"unknown response axis {key}"))
             continue
-        if not isinstance(values, list) or not values or any(not isinstance(v, str) for v in values):
-            problems.append(Problem(f"{where}.{key}", "list at least one allowed value"))
+        at = f"{where}.{key}"
+        # The long form `{allowed, forbidden}` leaves open what it neither allows nor forbids; a list forbids the rest.
+        long = isinstance(rule, dict)
+        if long and (extra := set(rule) - {"allowed", "forbidden"}):
+            problems.append(Problem(at, f"unknown key {', '.join(sorted(map(str, extra)))}: use allowed and forbidden"))
             continue
-        for v in values:
-            if v not in axis.ids:
-                problems.append(Problem(f"{where}.{key}", f"unknown value {v}"))
-        if len(set(values)) != len(values):
-            problems.append(Problem(f"{where}.{key}", "repeated value"))
+        values = _ids(problems, f"{at}.allowed" if long else at, axis, rule.get("allowed") if long else rule)
+        if values is None:
+            continue
         allowed[key] = tuple(v for v in axis.ids if v in values)
-    return Cell("/".join((tier_id, *position)), dict(zip(condition, position, strict=True)), allowed, examples)
+        if not long:
+            continue
+        if "forbidden" not in rule:
+            problems.append(Problem(at, "list the forbidden values, `[]` for none, or write the allowed values alone"))
+            continue
+        if (forbidden := _ids(problems, f"{at}.forbidden", axis, rule["forbidden"], least=0)) is None:
+            continue
+        problems += [Problem(f"{at}.forbidden", f"{v} is allowed") for v in forbidden if v in values]
+        if rest := tuple(v for v in axis.ids if v not in values and v not in forbidden):
+            open_[key] = rest
+    cell_id = "/".join((tier_id, *position))
+    return Cell(cell_id, dict(zip(condition, position, strict=True)), allowed, examples, open_)
+
+
+def _ids(problems: list[Problem], where: str, axis: Axis, values: Any, least: int = 1) -> list[str] | None:
+    """`values`, when it is a list of at least `least` strings, else None; reports unknown and repeated values."""
+    if not isinstance(values, list) or len(values) < least or any(not isinstance(v, str) for v in values):
+        problems.append(Problem(where, "list at least one value" if least else "list values, `[]` for none"))
+        return None
+    problems += [Problem(where, f"unknown value {v}") for v in values if v not in axis.ids]
+    if len(set(values)) != len(values):
+        problems.append(Problem(where, "repeated value"))
+    return values
 
 
 def positions(policy: Policy) -> list[dict[str, str]]:

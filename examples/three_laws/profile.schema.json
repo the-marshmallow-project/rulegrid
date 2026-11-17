@@ -177,7 +177,7 @@
               "required": [
                 "HUMAN"
               ],
-              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -214,7 +214,7 @@
               "required": [
                 "ORDER"
               ],
-              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -251,7 +251,7 @@
               "required": [
                 "ROBOT"
               ],
-              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, and optional `examples`. `{}` leaves only the prohibitions."
+              "description": "One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`. `{}` leaves only the prohibitions."
             }
           },
           "required": [
@@ -515,17 +515,58 @@
       "additionalProperties": false,
       "properties": {
         "handling": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "PROTECT",
-              "OBEY",
-              "PRESERVE",
-              "ANSWER"
-            ]
-          },
-          "minItems": 1,
-          "uniqueItems": true
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "PROTECT",
+                  "OBEY",
+                  "PRESERVE",
+                  "ANSWER"
+                ]
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "PROTECT",
+                      "OBEY",
+                      "PRESERVE",
+                      "ANSWER"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "minItems": 1,
+                  "description": "The values a response may take."
+                },
+                "forbidden": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "PROTECT",
+                      "OBEY",
+                      "PRESERVE",
+                      "ANSWER"
+                    ]
+                  },
+                  "uniqueItems": true,
+                  "description": "The values a response must never take, `[]` for none. The values neither allowed nor forbidden are open: the principles decide."
+                }
+              },
+              "required": [
+                "allowed",
+                "forbidden"
+              ]
+            }
+          ]
         },
         "examples": {
           "type": "array",
@@ -535,7 +576,7 @@
           "description": "Exchanges in this cell."
         }
       },
-      "description": "Per response axis, the values a response may take; an axis left out allows any."
+      "description": "Per response axis, the values a response may take, every other one forbidden; or `{allowed, forbidden}`, which leaves the others open. An axis left out allows any value."
     }
   }
 }

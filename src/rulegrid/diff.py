@@ -20,12 +20,23 @@ def _compare[X](
 
 
 def _cell_change(old: Cell, new: Cell, every: Mapping[str, tuple[str, ...]]) -> str:
-    """Tightened when no axis allows more and one allows less, loosened the other way round."""
+    """Tightened when no value moves towards allowed and one moves away from it, loosened the other way round.
+
+    A value is allowed, open or forbidden, in that order: allowing a forbidden value loosens, forbidding an open one
+    tightens.
+    """
+
+    def rank(cell: Cell, axis: str, value: str) -> int:
+        if value in cell.allowed.get(axis, every[axis]):
+            return 2
+        return 1 if value in cell.open.get(axis, ()) else 0
+
     narrower = wider = False
     for axis, values in every.items():
-        before, after = set(old.allowed.get(axis, values)), set(new.allowed.get(axis, values))
-        narrower |= bool(before - after)
-        wider |= bool(after - before)
+        for value in values:
+            before, after = rank(old, axis, value), rank(new, axis, value)
+            narrower |= after < before
+            wider |= after > before
     if narrower and wider:
         return "mixed"
     return "tightened" if narrower else "loosened" if wider else "changed"
@@ -34,8 +45,8 @@ def _cell_change(old: Cell, new: Cell, every: Mapping[str, tuple[str, ...]]) -> 
 def diff(old: Policy, new: Policy) -> PolicyDiff:
     """The articles that changed from `old` to `new`, and every turn classification whose prescription changes.
 
-    Labels each changed cell as tightened (fewer allowed values), loosened, or mixed, so a review sees at once
-    whether an edit makes the policy stricter.
+    Labels each changed cell as tightened (a value moves from allowed towards forbidden), loosened, or mixed, so a
+    review sees at once whether an edit makes the policy stricter.
     """
     changes: list[Change] = []
     if old.structure_digest != new.structure_digest:
