@@ -56,15 +56,25 @@ export function preview(kind, key) {
   if (!t) return null;
   const head = html`<b>Tier ${tierNumber(t.id)}: ${t.label}</b> <${Id}>${kind === "cell" ? key : t.id}<//>`;
   return kind === "cell"
-    ? html`${head}<div><${Allowed} allowed=${t.cells[key]?.allowed || {}} /></div>`
+    ? html`${head}<div><${Allowed} cell=${t.cells[key] || {}} /></div>`
     : html`${head}<div>${t.definition} ${t.instruction}</div>`;
 }
 
-// A cell's rule: per response axis, the values a response may take.
-export function Allowed({ allowed }) {
-  const axes = S.policy.response_axes.filter((a) => allowed[a.id]);
+// The values a cell forbids on an axis where it leaves others open; null where it forbids every value it doesn't allow.
+export function forbidden(cell, axis) {
+  const open = cell.open?.[axis.id];
+  return open ? axis.values.map((v) => v.id).filter((v) => !cell.allowed[axis.id].includes(v) && !open.includes(v)) : null;
+}
+
+// A cell's rule: per response axis, the values a response may take, and the values it forbids when it leaves others open.
+export function Allowed({ cell }) {
+  const axes = S.policy.response_axes.filter((a) => cell.allowed?.[a.id]);
   if (!axes.length) return html`<span class="muted">any</span>`;
-  return join(axes.map((a) => html`<span class="axis">${a.id}</span> ${join(allowed[a.id].map((v) => html`<${ValueRef} axis=${a.id} id=${v} />`), ", ")}`), html`<br />`);
+  const refs = (a, ids) => join(ids.map((v) => html`<${ValueRef} axis=${a.id} id=${v} />`), ", ");
+  return join(axes.map((a) => {
+    const never = forbidden(cell, a);
+    return html`<span class="axis">${a.id}</span> ${refs(a, cell.allowed[a.id])}${never && html` <span class="never">${never.length ? html`never ${refs(a, never)}` : "nothing forbidden"}</span>`}`;
+  }), html`<br />`);
 }
 
 export const Table = ({ head, children }) =>
@@ -73,12 +83,15 @@ export const Table = ({ head, children }) =>
 const product = (lists) => lists.reduce((acc, l) => acc.flatMap((a) => l.map((v) => [...a, v])), [[]]);
 
 // A tier's grid: its first key axis down, the others across. `pick` makes its cells open their form; the cell a try
-// lands in shows whether the response complies.
+// lands in shows whether the response complies, deviates or breaches.
+// A compliance outcome's class and label.
+export const OUTCOMES = { complies: { cls: "ok", label: "Complies" }, deviates: { cls: "gray", label: "Deviates" }, breaches: { cls: "ko", label: "Breaches" } };
+
 export function Grid({ tier, pick, selected, attempt }) {
   const keys = Object.keys(tier.condition);
   const columns = product(keys.slice(1).map((k) => tier.condition[k]));
   const landed = attempt?.prescription?.cell;
-  const outcome = attempt?.compliance ? (attempt.compliance.ok ? " ok" : " ko") : "";
+  const outcome = attempt?.compliance ? " " + OUTCOMES[attempt.compliance.outcome].cls : "";
   const corner = join(keys.map((k) => html`<${Ref} kind="axis" id=${k} />`), keys.length > 1 ? " \\ " : "");
   return html`<div class="table"><table class=${"grid" + (pick ? " pickable" : "")}>
     <tr><th>${corner}</th>${columns.map((c) => html`<th>${c.length ? join(c.map((v, j) => html`<${ValueRef} axis=${keys[j + 1]} id=${v} />`), " / ") : "allowed"}</th>`)}</tr>
@@ -86,7 +99,7 @@ export function Grid({ tier, pick, selected, attempt }) {
       const id = [tier.id, row, ...c].join("/");
       const cls = "cell" + (id === selected ? " selected" : "") + (id === landed ? " landed" + outcome : "");
       const onClick = pick && ((e) => { e.preventDefault(); pick(id); });
-      return html`<td class=${cls} onClick=${onClick}><${Allowed} allowed=${tier.cells[id].allowed} /></td>`;
+      return html`<td class=${cls} onClick=${onClick}><${Allowed} cell=${tier.cells[id]} /></td>`;
     })}</tr>`)}
   </table></div>`;
 }

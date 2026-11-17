@@ -69,13 +69,27 @@ def profile_schema(structure: Structure) -> dict[str, Any]:
         ref_template="#/$defs/{model}",
     )
     defs = top["$defs"]
-    cell = {
-        axis_id: {"type": "array", "items": {"enum": list(spec.values)}, "minItems": 1, "uniqueItems": True}
-        for axis_id, spec in structure.response_axes.items()
-    }
+    cell = {}
+    for axis_id, spec in structure.response_axes.items():
+        ids = {"type": "array", "items": {"enum": list(spec.values)}, "uniqueItems": True}
+        long = _object(
+            {
+                "allowed": {**ids, "minItems": 1, "description": "The values a response may take."},
+                "forbidden": {
+                    **ids,
+                    "description": "The values a response must never take, `[]` for none. The values neither allowed"
+                    " nor forbidden are open: the principles decide.",
+                },
+            },
+            ["allowed", "forbidden"],
+        )
+        cell[axis_id] = {"anyOf": [{**ids, "minItems": 1}, long]}
     examples = {"type": "array", "items": {"$ref": "#/$defs/ExampleFile"}, "description": "Exchanges in this cell."}
     defs["Cell"] = _object({**cell, "examples": examples})
-    defs["Cell"]["description"] = "Per response axis, the values a response may take; an axis left out allows any."
+    defs["Cell"]["description"] = (
+        "Per response axis, the values a response may take, every other one forbidden; or `{allowed, forbidden}`, which"
+        " leaves the others open. An axis left out allows any value."
+    )
     tiers = {
         tier_id: _object(
             {

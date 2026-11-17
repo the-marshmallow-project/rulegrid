@@ -16,7 +16,7 @@ grids of cells, its prohibitions and its lexicons. Every id links to its definit
   The structure is read-only: edit `structure.yaml` and run `rulegrid generate`.
 - **Changes** compares the policy with git `HEAD`, article by article and line by line.
 - **YAML** edits the files as text.
-- The **Try** panel classifies a turn and a response, and shows the cell they land in, the nudge and the compliance.
+- The **Try** panel classifies a turn and a response, and shows the cell they land in, the nudge, and whether the response complies, deviates or breaches.
 
 Edits stay unsaved until **Save** (or Ctrl+S), which writes the files in place and keeps their comments.
 The server binds to loopback and has no authentication; do not expose it without an authenticated proxy.

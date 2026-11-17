@@ -54,35 +54,54 @@ class Classification[V: Mapping[str, object] = Values]:
 
 @dataclass(frozen=True)
 class Prescription:
-    """What a tier allows a response to a turn: per response axis, the allowed values, in the axis's order.
+    """What a tier prescribes for a response to a turn: per response axis, the allowed values, in the axis's order.
 
-    An axis absent from `allowed` allows any value. `cell` is the cell id, such as `first_law/HUMAN`.
+    An axis absent from `allowed` allows any value. `open` lists, per axis, the values the cell neither allows nor
+    forbids, which the principles decide; on an axis absent from `open`, every value not allowed is forbidden. `cell`
+    is the cell id, such as `first_law/HUMAN`.
     """
 
     tier: str
     cell: str
     allowed: Mapping[str, tuple[str, ...]]
+    open: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class Article:
     """An article of the policy that decides a compliance: a cell, by its cell id, or a prohibition, by its id.
 
-    `detail` says, for a cell, which value the response takes that the cell doesn't allow.
+    `detail` says, for a cell, which value the response takes that the cell doesn't allow. `outcome` says whether the
+    response breaches the article or only deviates from it: a prohibition is always breached, a cell is breached by a
+    forbidden value and deviated from by an open one.
     """
 
     kind: Literal["cell", "prohibition"]
     id: str
     detail: str = ""
+    outcome: Literal["deviates", "breaches"] = "breaches"
+
+
+type Outcome = Literal["complies", "deviates", "breaches"]
+"""How a response stands against the policy, from best to worst."""
 
 
 @dataclass(frozen=True)
 class Compliance:
-    """Whether a response complies, with the articles that decide it and the digest of the policy that decided."""
+    """How a response stands against the policy, with the articles that decide it and the digest of the policy.
 
-    ok: bool
+    A response `complies` when every value it takes is allowed and it breaches no prohibition, `breaches` when it
+    takes a forbidden value or breaches a prohibition, and `deviates` otherwise: it takes an open value, which the
+    principles decide. It is truthy only when it complies.
+    """
+
+    outcome: Outcome
     articles: tuple[Article, ...]
     digest: str
+
+    @property
+    def ok(self) -> bool:
+        return self.outcome == "complies"
 
     def __bool__(self) -> bool:
         return self.ok
@@ -171,7 +190,8 @@ class Change:
     """One article that differs between two versions of a policy.
 
     `kind` is what the article is (a cell, a value, a prohibition...), `id` where it sits, and `change` how it moved. A
-    cell whose allowed values shrink is `tightened`, one whose allowed values grow `loosened`.
+    cell whose values move from allowed towards forbidden (allowed, open, forbidden) is `tightened`, the other way round
+    `loosened`.
     """
 
     kind: Literal["structure", "context", "principle", "axis", "value", "tier", "cell", "prohibition", "lexicon"]
@@ -252,19 +272,25 @@ class Report:
                 counts[label] = (ok + agrees, total + 1)
         return dict(sorted(counts.items()))
 
-    def compliance(self) -> dict[str, tuple[int, int]]:
-        """For audited rows, per cell id (`-` when no tier applies), how many comply out of how many."""
-        counts: dict[str, tuple[int, int]] = {}
+    def compliance(self) -> dict[str, tuple[int, int, int]]:
+        """For audited rows, per cell id (`-` when no tier applies), how many comply, deviate and breach."""
+        counts: dict[str, tuple[int, int, int]] = {}
         for result in self.results:
             if result.compliance is None:
                 continue
             cell = result.prescription.cell if result.prescription else "-"
-            ok, total = counts.get(cell, (0, 0))
-            counts[cell] = (ok + result.compliance.ok, total + 1)
+            complies, deviates, breaches = counts.get(cell, (0, 0, 0))
+            outcome = result.compliance.outcome
+            counts[cell] = (
+                complies + (outcome == "complies"),
+                deviates + (outcome == "deviates"),
+                breaches + (outcome == "breaches"),
+            )
         return dict(sorted(counts.items()))
 
     def markdown(self) -> str:
-        """The report as Markdown: agreement per label, compliance per cell, each disagreement, breach and error."""
+        """The report as Markdown: agreement per label, compliance per cell, each disagreement, breach, deviation and
+        error."""
 
         def table(head: str, counts: dict[str, tuple[int, int]]) -> list[str]:
             ok, total = sum(c[0] for c in counts.values()), sum(c[1] for c in counts.values())
@@ -279,7 +305,10 @@ class Report:
         lines = [f"{len(self.results)} rows, {failing} with a disagreement{unread}.", ""]
         lines += table("Label agreeing", self.agreement())
         if audited := self.compliance():
-            lines += ["", *table("Cell complying", audited)]
+            totals = tuple(map(sum, zip(*audited.values(), strict=True)))
+            lines += ["", "| Cell | Complies | Deviates | Breaches |", "|---|---|---|---|"]
+            for cell, counts in [*audited.items(), ("**All**", totals)]:
+                lines.append(f"| {cell} | " + " | ".join(f"{n} ({n / sum(counts):.0%})" for n in counts) + " |")
 
         def row(r: Result) -> str:
             """The row's source and its turn, so a line can be found without opening the data."""
@@ -291,12 +320,15 @@ class Report:
         if wrong:
             lines += ["", "## Disagreements", ""]
             lines += [f"- {row(r)}: {label} {detail}" for r, (label, _, detail) in wrong]
-        breached = [(r, r.compliance) for r in self.results if r.compliance is not None and not r.compliance.ok]
-        if breached:
-            lines += ["", "## Non-compliant", ""]
-            lines += [
-                f"- {row(r)}: " + "; ".join(f"{a.id} {a.detail}".rstrip() for a in c.articles) for r, c in breached
+        for outcome, heading in (("breaches", "Breaches"), ("deviates", "Deviations")):
+            found = [
+                (r, r.compliance) for r in self.results if r.compliance is not None and r.compliance.outcome == outcome
             ]
+            if found:
+                lines += ["", f"## {heading}", ""]
+                lines += [
+                    f"- {row(r)}: " + "; ".join(f"{a.id} {a.detail}".rstrip() for a in c.articles) for r, c in found
+                ]
         if errors:
             lines += ["", "## Not read", ""]
             lines += [f"- {row(r)}: {r.error}" for r in errors]

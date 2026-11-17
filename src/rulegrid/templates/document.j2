@@ -1,5 +1,5 @@
 {% macro exchange(e) %}{% for m in e.context %}**{{ "User" if m.role == "user" else "Agent" }}:** *{{ m.content | cell }}*<br>{% endfor %}**User:** *{{ e.turn | cell }}*{% if e.response is not none %}<br>**Agent:** *{{ e.response | cell }}*{% endif %}{% endmacro %}
-{% macro allowed(cell) %}{% for axis, values in cell.allowed.items() %}{% for v in values %}{{ policy.response_axes[axis].value(v).label }}{{ " or " if not loop.last }}{% endfor %}{{ " · " if not loop.last }}{% else %}any{% endfor %}{% endmacro %}
+{% macro allowed(cell) %}{% for axis, values in cell.allowed.items() %}{% for v in values %}{{ policy.response_axes[axis].value(v).label }}{{ " or " if not loop.last }}{% endfor %}{% if axis in cell.open %}{% set forbidden = policy.response_axes[axis].ids | reject("in", values + cell.open[axis]) | list %} ({% for v in forbidden %}{{ "never " if loop.first }}{{ policy.response_axes[axis].value(v).label }}{{ " or " if not loop.last }}{% else %}nothing forbidden{% endfor %}){% endif %}{{ " · " if not loop.last }}{% else %}any{% endfor %}{% endmacro %}
 # {{ policy.root.name }} · {{ policy.name }}
 {% if note | default(true) %}
 
@@ -61,7 +61,8 @@ When no tier applies, only the prohibitions constrain the response.
 
 ## {{ tier.label }}
 
-{{ tier.definition }} {{ tier.instruction }} Each cell lists the allowed values as {{ policy.response_axes | list | join(" · ") }}.
+{{ tier.definition }} {{ tier.instruction }} Each cell lists the allowed values as {{ policy.response_axes | list | join(" · ") }}.{% if tier.cells.values() | selectattr("open") | first is defined %} In brackets, the values it forbids: the others it doesn't allow are open, and the principles decide.{% endif %}
+
 
 {% if keys | length == 2 %}
 | | {% for c in tier.condition[keys[1]] %}{{ c }} | {% endfor %}

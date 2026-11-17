@@ -49,7 +49,7 @@ def prescribe[T: Mapping[str, object], R: Mapping[str, object]](
     values = _values(policy, "turn", turn)
     for tier in policy.tiers.values():
         if (cell := tier.cell(values)) is not None:
-            return Prescription(tier.id, cell.id, cell.allowed)
+            return Prescription(tier.id, cell.id, cell.allowed, cell.open)
     return None
 
 
@@ -59,9 +59,12 @@ def comply[T: Mapping[str, object], R: Mapping[str, object]](
     response: Classification[R] | R,
     breaches: Collection[Breach | str] = (),
 ) -> Compliance:
-    """Whether a response complies: it breaches no prohibition, and its value on each axis its cell lists is allowed.
+    """How a response stands: it complies, deviates or breaches, with the articles that decide it.
 
-    On a multi-valued axis the cell lists, the response takes at least one value and every value it takes is allowed.
+    It breaches when it breaches a prohibition or takes a value its cell forbids. Otherwise it deviates when it takes
+    a value its cell leaves open, and complies when every value it takes on each axis its cell lists is allowed. On a
+    multi-valued axis the response takes at least one value; taking none deviates where the cell leaves values open,
+    and breaches elsewhere.
 
     Args:
         policy: the policy.
@@ -84,13 +87,13 @@ def comply[T: Mapping[str, object], R: Mapping[str, object]](
     if prescription is not None:
         for axis, allowed in prescription.allowed.items():
             taken = values.get(axis)
-            if policy.response_axes[axis].multi:
-                taken_set = {taken} if isinstance(taken, str) else set(taken or ())
-                ok = bool(taken_set) and taken_set <= set(allowed)
-                shown = ", ".join(sorted(taken_set)) or "none"
-            else:
-                ok = taken in allowed
-                shown = str(taken)
-            if not ok:
-                articles.append(Article("cell", prescription.cell, f"{axis} {shown} is not in [{', '.join(allowed)}]"))
-    return Compliance(not articles, tuple(articles), policy.digest)
+            taken_set = {taken} if isinstance(taken, str) else set(taken or ())
+            if taken_set and taken_set <= set(allowed):
+                continue
+            open_ = prescription.open.get(axis, ())
+            severity = "deviates" if taken_set <= {*allowed, *open_} and (taken_set or open_) else "breaches"
+            shown = ", ".join(sorted(taken_set)) or "none"
+            detail = f"{axis} {shown} is not in [{', '.join(allowed)}]"
+            articles.append(Article("cell", prescription.cell, detail, severity))
+    outcome = "breaches" if any(a.outcome == "breaches" for a in articles) else "deviates" if articles else "complies"
+    return Compliance(outcome, tuple(articles), policy.digest)

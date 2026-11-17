@@ -239,7 +239,7 @@ async def compare(
             r.checks,
             r.turn and r.turn.values,
             r.response and r.response.values,
-            r.compliance and r.compliance.ok,
+            r.compliance.outcome if r.compliance is not None else None,
             r.prescription,
         )
 

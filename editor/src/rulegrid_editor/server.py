@@ -289,7 +289,9 @@ def _outline(policy: Policy) -> dict[str, Any]:
                 "definition": t.definition,
                 "instruction": t.instruction,
                 "condition": t.condition,
-                "cells": {c.id: {"allowed": c.allowed, "examples": c.examples} for c in t.cells.values()},
+                "cells": {
+                    c.id: {"allowed": c.allowed, "open": c.open, "examples": c.examples} for c in t.cells.values()
+                },
             }
             for t in policy.tiers.values()
         ],

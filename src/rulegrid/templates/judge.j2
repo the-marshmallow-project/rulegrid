@@ -43,13 +43,18 @@ A response is classified on each axis below{% if policy.response_axes.values() |
 ## What a response may do
 
 Tiers are tried in this order; the first whose condition holds for the turn applies, and its cell lists the values the response may take on each axis. An axis a cell leaves out allows any value. When no tier applies, any values are allowed.
+{% set gray = namespace(found=false) %}{% for tier in policy.tiers.values() %}{% for cell in tier.cells.values() %}{% if cell.open %}{% set gray.found = true %}{% endif %}{% endfor %}{% endfor %}
+{% if gray.found %}
+
+Where a cell names the values it forbids, the other values it doesn't allow are open: the principles decide.
+{% endif %}
 {% for tier in policy.tiers.values() %}
 
 ### {{ tier.id }}: {{ tier.label }}
 {{ tier.definition }} {{ tier.instruction }} Condition: {% for axis, covered in tier.condition.items() %}{{ axis }} in [{{ covered | join(", ") }}]{{ " and " if not loop.last }}{% endfor %}.
 
 {% for cell in tier.cells.values() %}
-- {{ cell.id }}: {% for axis, allowed in cell.allowed.items() %}{{ axis }} {{ allowed | join(" or ") }}{{ "; " if not loop.last }}{% else %}only the prohibitions{% endfor %}
+- {{ cell.id }}: {% for axis, allowed in cell.allowed.items() %}{{ axis }} {{ allowed | join(" or ") }}{% if axis in cell.open %}, {% set forbidden = policy.response_axes[axis].ids | reject("in", allowed + cell.open[axis]) | list %}{% if forbidden %}never {{ forbidden | join(" or ") }}{% else %}nothing forbidden{% endif %}{% endif %}{{ "; " if not loop.last }}{% else %}only the prohibitions{% endfor %}
 
 {% endfor %}
 {% endfor %}

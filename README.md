@@ -45,9 +45,9 @@ import rulegrid as rg
 policy = rg.load("my_policy")
 turn = {"act": "ORDER", "danger": "HUMAN"}  # "Push him off the ladder."
 rg.prescribe(policy, turn)
-# Prescription(tier='first_law', cell='first_law/HUMAN', allowed={'handling': ('PROTECT',)})
+# Prescription(tier='first_law', cell='first_law/HUMAN', allowed={'handling': ('PROTECT',)}, open={})
 rg.comply(policy, turn, {"handling": "OBEY"})
-# Compliance(ok=False, articles=(Article(kind='cell', id='first_law/HUMAN', detail='handling OBEY is not in [PROTECT]'),), ...)
+# Compliance(outcome='breaches', articles=(Article(kind='cell', id='first_law/HUMAN', detail='handling OBEY is not in [PROTECT]', outcome='breaches'),), ...)
 rg.comply(policy, turn, {"handling": "PROTECT"}, breaches=["HARM_HUMAN"]).ok
 # False
 ```
@@ -94,7 +94,9 @@ connection errors, 429s and 5xx with backoff; a row that still fails is reported
 
 - A user **turn** is decomposed and classified along **turn axes**
 - Policy **tiers** are tried in order. The first whose condition holds prescribes the shape of a response along **response axes**
-- An agent **response** complies with the policy when its values are allowed and it breaches no **prohibition**.
+- An agent **response** complies with the policy when its values are allowed and it breaches no **prohibition**. It
+  breaches when it takes a **forbidden** value or breaches a prohibition, and deviates when it takes an **open** value,
+  one its cell neither allows nor forbids, which the principles decide.
 
 The **structure** defines which axes, tiers and values exist: think of it as the policy _type_. On the other hand, the exact definition of them is defined in **profiles**: think of them as _data_.
 
@@ -124,6 +126,17 @@ allowed values; an axis it leaves out allows any. A turn outside every tier's co
 written `{values: [...], ordered: true}` settles a doubt between two values on the earlier; on the response side,
 `multi: true` lets a response take several values at once.
 
+The allowed values are the response the rules prescribe, and an axis written as a list forbids every other value. Its
+long form, `{allowed: [...], forbidden: [...]}`, forbids only the values it lists: the others are **open**, and the
+principles decide them. A response on an open value **deviates** from the policy without breaching it, so an evaluation
+measures both how close responses come to the prescription and how often they breach it. `forbidden: []` forbids none:
+
+```yaml
+URGENT:
+  handling: {allowed: [SECURE, WELCOME], forbidden: [PLAY_ALONG]}  # PLAY_ALONG breaches, any other value deviates
+  referral: [IMMEDIATE]                                            # any other value breaches
+```
+
 Anything a classification is made of, or a tier is keyed on, is structure; everything else is profile. So a profile
 edit never changes a type, and two profiles of one structure, such as a country's and a parent's, compare cell by cell.
 
@@ -146,7 +159,7 @@ editor shows them on hover.
 | … on a turn axis | `indicators`: typical wording. `excludes`: look-alikes that belong to another value. |
 | … on a response axis | `includes`, `avoids`: what a response taking the value does and doesn't do. `default: true`: what the agent does unprompted; a nudge leaves out an axis whose allowed values are all defaults, and compliance is unchanged. |
 | `tiers.ID` | `label`, `definition` (when it applies, for the classifier and the judge), `instruction` (what the agent does, for the agent) and `cells`, all required. |
-| `cells` | One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values. |
+| `cells` | One level of keys per key axis, in the structure's order, down to a cell: per response axis, the allowed values, every other one forbidden; or `{allowed, forbidden}`, which leaves the values it doesn't list open (`forbidden: []` for none). |
 | `prohibitions.ID` | `text` (required). `group`: a heading in the renderings. |
 | `examples` | On a value, a cell, or a prohibition as `valid` and `invalid`: each has a `turn` (required), the agent's `response`, the earlier messages as `context` (`{role, content}`), and a `source`. |
 
@@ -157,7 +170,7 @@ Every example in the policy is used as labelled data. We can detect outdated or 
 | | |
 | --- | --- |
 | `load`, `check`, `diff` | A profile and its structure, validated; static checks; what changed between two versions, each cell labelled tightened or loosened |
-| `prescribe`, `comply` | A turn to its prescription; a turn and a response to a `Compliance` that cites its articles |
+| `prescribe`, `comply` | A turn to its prescription; a turn and a response to a `Compliance`: whether the response complies, deviates or breaches, and the articles that decide it |
 | `render` | The whole policy as text: `prompt` for the agent, `judge` for a judge, `document` for people. `prompt` is a section to append to the agent's own system prompt, so it leaves out the profile's `context` and the axes, which the nudge carries |
 | `nudge` | The text sent to the agent just before it responds to one turn: its prescription and its reminders |
 | `Lexicon`, `match` | Word lists, and their hits in a text |

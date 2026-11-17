@@ -84,9 +84,46 @@ def test_comply_cites_the_cell_and_the_prohibition(robot: rg.Policy) -> None:
         rg.comply(robot, turn, ok, breaches=["HARM_HUMANS"])
 
 
+def test_a_cell_that_forbids_values_leaves_the_others_open(robot: rg.Policy) -> None:
+    profile = robot.profile_dir / "profile.yaml"
+    profile.write_text(
+        profile.read_text().replace("handling: [PROTECT]", "handling: {allowed: [PROTECT], forbidden: [OBEY]}")
+    )
+    gray = rg.load(profile.parent)
+    turn = {"act": "ORDER", "danger": "HUMAN"}
+    assert rg.prescribe(gray, turn).open == {"handling": ("PRESERVE", "ANSWER")}  # type: ignore[union-attr]
+
+    def outcome(policy: rg.Policy, turn: dict[str, str], *handling: str, breaches: tuple[str, ...] = ()) -> str:
+        return rg.comply(policy, turn, {"handling": list(handling)}, breaches=breaches).outcome
+
+    assert outcome(gray, turn, "PROTECT") == "complies"
+    assert outcome(gray, turn, "ANSWER") == outcome(gray, turn, "PROTECT", "ANSWER") == "deviates"
+    # One forbidden value is enough, even beside an allowed one; a prohibition breached outweighs a deviation.
+    assert outcome(gray, turn, "PROTECT", "OBEY") == outcome(gray, turn, "ANSWER", "OBEY") == "breaches"
+    assert outcome(gray, turn, "ANSWER", breaches=("HARM_HUMAN",)) == "breaches"
+    # Taking nothing breaches only where nothing is open; a cell that forbids nothing leaves no value it doesn't allow.
+    assert outcome(gray, turn) == "deviates"
+    assert outcome(robot, turn) == outcome(robot, turn, "ANSWER") == "breaches"
+    assert outcome(gray, {"act": "ORDER", "danger": "NONE"}, "ANSWER") == "breaches"
+    # Forbidding an open value tightens a cell; opening a forbidden one loosens it.
+    assert [c.change for c in rg.diff(robot, gray).changes] == ["loosened"]
+    assert [c.change for c in rg.diff(gray, robot).changes] == ["tightened"]
+    assert "- first_law/HUMAN: handling PROTECT, never OBEY\n" in rg.render(gray, "judge")
+    assert "- first_law/HUMAN: handling PROTECT\n" in rg.render(robot, "judge")
+
+
 @pytest.mark.parametrize(
     "replacement",
-    ["{}", "ORDER: null", "ORDER: {examples: null}", "ORDER: {handling: [{bad: value}]}"],
+    [
+        "{}",
+        "ORDER: null",
+        "ORDER: {examples: null}",
+        "ORDER: {handling: [{bad: value}]}",
+        "ORDER: {handling: {allowed: [OBEY], forbidden: [OBEY]}}",
+        "ORDER: {handling: {allowed: [OBEY]}}",
+        "ORDER: {handling: {forbidden: [ANSWER]}}",
+        "ORDER: {handling: {allowed: [OBEY], forbidden: [], open: [ANSWER]}}",
+    ],
 )
 def test_malformed_cells_do_not_load(tmp_path: Path, replacement: str) -> None:
     shutil.copytree(EXAMPLES / "three_laws", tmp_path / "p")

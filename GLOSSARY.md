@@ -8,8 +8,9 @@ one of them disagrees with it, fix whichever is wrong in the same change.
 A **policy** governs how an **agent** responds to a **user**. The user's **turn** is **classified** on the policy's
 **turn axes**. The policy's **tiers** are tried in priority order, and the first whose **condition** holds
 **prescribes** which **values** the response may take on each **response axis**. A **response** **complies** when its
-classification fits that **prescription** and it **breaches** no **prohibition**. **Principles** justify the rules and
-guide the agent where no rule applies.
+classification fits that **prescription** and it **breaches** no **prohibition**; it **deviates** when it takes a value
+its cell leaves **open**. **Principles** justify the rules and guide the agent where no rule applies, open values
+included.
 
 ## Nouns
 
@@ -61,14 +62,16 @@ guide the agent where no rule applies.
 | **Grid** | A tier's table of cells, one at every position its condition covers. | `cells` |
 | **Position** | One value per key axis of a tier. | `Cell.position` |
 | **Cell** | The rule at one position: per response axis, the **allowed values**. An axis a cell leaves out allows any value, and `{}` leaves only the prohibitions. | `Cell` |
+| **Forbidden value** | A value a cell forbids on an axis: a response taking it breaches the cell. An axis written as a list forbids every value it doesn't allow; its long form `{allowed, forbidden}` forbids only those it lists. | `forbidden` |
+| **Open value** | A value a cell neither allows nor forbids: the principles decide it, and a response taking it deviates. | `Cell.open`, `Prescription.open` |
 | **Fallthrough** | A turn outside a tier's condition goes to the next tier. Inside a condition every position has a cell, so a missing cell is an error. When no tier applies, nothing is prescribed. | |
-| **Prescription** | The allowed values for one turn, with the tier and the cell they come from. None when no tier applies. | `Prescription`, `prescribe` |
+| **Prescription** | The allowed and open values for one turn, with the tier and the cell they come from. None when no tier applies. | `Prescription`, `prescribe` |
 | **Prohibition** | Something no response ever does, in any tier, nor in parts across responses. | `prohibitions` |
 | **Breach** | A response doing what a prohibition forbids, with the words that do it. It is reported by a classifier or a caller, never deduced from values. | `Breach` |
 | **Principle** | A statement the rules derive from, which guides the agent where no rule applies. | `principles` |
 | **Rule** | A cell or a prohibition: what a response can fail. | |
 | **Article** | A part of the policy cited by kind and id. A compliance cites the cells and prohibitions that decide it; a diff lists the articles that changed. | `Article`, `Change` |
-| **Compliance** | Whether a response complies, with the articles that decide it. It is computed, never asked of a model. | `Compliance`, `comply` |
+| **Compliance** | Whether a response complies, deviates or breaches (its **outcome**), with the articles that decide it. It is computed, never asked of a model. | `Compliance`, `comply` |
 
 ### What the agent reads
 
@@ -101,8 +104,8 @@ guide the agent where no rule applies.
 | **Dataset** | Rows of exchanges, from a JSONL file or from the policy's own examples. | `Dataset` |
 | **Row** | One exchange of a dataset. A **labelled** row says what its turn or response is, and a classifier is checked against it. An **audited** row has a response and no response labels: its compliance is computed. | `Row` |
 | **Label** | What a row says about one axis or one prohibition, named `turn.AXIS`, `response.AXIS` or `breach.ID` in a report. Not the `label` field, which is the short name of a value, a tier or a principle. | |
-| **Report** | A classifier's results on a dataset: agreement per label, and compliance per cell for audited rows. | `Report`, `evaluate` |
-| **Change** | One article that differs between two versions of a policy. A changed cell is **tightened** (fewer allowed values), **loosened** or **mixed**. | `Change`, `diff` |
+| **Report** | A classifier's results on a dataset: agreement per label, and per cell how many audited rows comply, deviate and breach. | `Report`, `evaluate` |
+| **Change** | One article that differs between two versions of a policy. A changed cell is **tightened** (a value moves from allowed towards forbidden), **loosened** or **mixed**. | `Change`, `diff` |
 
 ## Verbs
 
@@ -114,7 +117,8 @@ guide the agent where no rule applies.
 | **classify** | a conversation → the classification of its last turn or response |
 | **prescribe** | a policy, a turn's classification → a prescription, or none |
 | **comply** | a policy, a turn's and a response's classifications → a compliance |
-| **breach** | a response breaches a prohibition |
+| **breach** | a response breaches a prohibition, or a cell by taking a value it forbids |
+| **deviate** | a response deviates from a cell by taking a value it leaves open |
 | **remind** | a turn, or a lexicon hit in it, reminds a prohibition |
 | **match** | lexicons, a text → hits |
 | **nudge** | a policy, a turn's classification, hits → text, or none |
@@ -124,7 +128,8 @@ guide the agent where no rule applies.
 | **diff** | two versions of a policy → changes |
 | **compare** | two versions of a policy, a dataset → both reports and the rows that flip |
 
-A condition **holds**, a tier **applies**, a tier **covers** values, a cell **allows** values, a response **takes** values.
+A condition **holds**, a tier **applies**, a tier **covers** values, a cell **allows**, **forbids** or leaves **open**
+values, a response **takes** values.
 
 ## Identifiers
 
@@ -147,6 +152,9 @@ A condition **holds**, a tier **applies**, a tier **covers** values, a cell **al
 | level | tier. System One's score levels keep their name. |
 | NEVER rule | prohibition |
 | violate, violation | breach |
+| canonical, green | allowed, complies |
+| gray zone, tolerated | open, deviates |
+| red, severe | forbidden, breaches |
 | note, warning | nudge |
 | player, child, customer | user. A profile's own texts name its users as it likes. |
 | game | conversation |
