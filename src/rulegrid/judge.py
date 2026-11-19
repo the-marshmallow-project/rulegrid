@@ -68,6 +68,11 @@ def _literal(ids: Sequence[str]) -> Any:
     return Literal[tuple(ids)]
 
 
+def _key(index: int) -> str:
+    """The field holding the answer for exchange `index`, whose JSON name is the index itself."""
+    return f"exchange_{index}"
+
+
 class Judge:
     """A `ClassifierProtocol` over a chat LLM, which also `assess`es whole conversations.
 
@@ -84,8 +89,12 @@ class Judge:
         instructions = (instructions or template(policy, "judge_instructions.j2")).strip()
         self.system_prompt = f"{instructions}\n\n<policy>\n{render(policy, 'judge').strip()}\n</policy>"
 
-    def schema(self, size: int) -> type[BaseModel]:
-        """The response schema for `size` judged exchanges, every id restricted to the policy's."""
+    def schema(self, judged: Sequence[int]) -> type[BaseModel]:
+        """The response schema for the `judged` exchanges, every id restricted to the policy's.
+
+        Each exchange is answered under its index, in the order given, so the answers are those exchanges by
+        construction: a judge cannot skip one, answer one twice or answer another.
+        """
         p = self.policy
         turn = create_model(
             "Turn",
@@ -117,7 +126,6 @@ class Judge:
         answer = create_model(
             "Exchange",
             __config__=_FORBID,
-            index=(int, Field(description="The index attribute of the <exchange> this object answers for.")),
             turn=(turn, ...),
             response=(response, ...),
             rationale=(
@@ -128,17 +136,13 @@ class Judge:
         return create_model(
             "Assessments",
             __config__=_FORBID,
-            exchanges=(list[answer], Field(min_length=size, max_length=size)),  # type: ignore[valid-type]
+            **{_key(i): (answer, Field(alias=str(i))) for i in judged},  # type: ignore[arg-type]
         )
 
     async def assess(self, conversation: Conversation, judged: Sequence[int] | None = None) -> list[Assessment]:
-        """Judge the exchanges of a conversation, every one by default, in one call; the others are context.
-
-        Raises:
-            ValueError: when the judge does not answer exactly the judged exchanges.
-        """
+        """Judge the exchanges of a conversation, every one by default, in one call; the others are context."""
         split = exchanges(messages(conversation))
-        judged = list(range(len(split)) if judged is None else judged)
+        judged = list(dict.fromkeys(range(len(split)) if judged is None else judged))
         if not judged:
             return []
         asked = set(judged)
@@ -147,7 +151,7 @@ class Judge:
             "</exchange>"
             for i, (t, r) in enumerate(split)
         )
-        schema = self.schema(len(judged))
+        schema = self.schema(judged)
         content = await self.complete(
             [
                 {"role": "system", "content": self.system_prompt},
@@ -155,10 +159,8 @@ class Judge:
             ],
             schema,
         )
-        answers = {a.index: a for a in schema.model_validate_json(content).exchanges}  # type: ignore[attr-defined]
-        if set(answers) != asked:
-            raise ValueError(f"the judge answered exchanges {sorted(answers)}, asked about {sorted(asked)}")
-        return [self._assessment(i, answers[i]) for i in judged]
+        answers = schema.model_validate_json(content)
+        return [self._assessment(i, getattr(answers, _key(i))) for i in judged]
 
     def _assessment(self, index: int, answer: Any) -> Assessment:
         p = self.policy
