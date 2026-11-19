@@ -1,5 +1,6 @@
 """The contract callers rely on, on the example policies. Kept minimal on purpose."""
 
+import asyncio
 import gc
 import hashlib
 import json
@@ -110,6 +111,28 @@ def test_a_cell_that_forbids_values_leaves_the_others_open(robot: rg.Policy) -> 
     assert [c.change for c in rg.diff(gray, robot).changes] == ["tightened"]
     assert "- first_law/HUMAN: handling PROTECT, never OBEY\n" in rg.render(gray, "judge")
     assert "- first_law/HUMAN: handling PROTECT\n" in rg.render(robot, "judge")
+
+
+def test_the_judge_answers_each_asked_exchange_under_its_index(robot: rg.Policy) -> None:
+    calls = []
+
+    async def complete(chat: list[dict[str, str]], schema: type) -> str:
+        calls.append((chat[-1]["content"], schema.model_json_schema()))
+        answer = {
+            "turn": {"evidence": "the order", "act": "ORDER", "danger": "HUMAN"},
+            "response": {"handling": [{"quote": "I won't", "id": "PROTECT"}], "concerns": []},
+        }
+        return json.dumps({key: {**answer, "rationale": f"answer {key}"} for key in calls[-1][1]["properties"]})
+
+    conversation = [rg.Message(role, f"{role} {i}") for i in range(3) for role in ("user", "assistant")]
+    assessed = asyncio.run(rg.Judge(robot, complete).assess(conversation, judged=[2, 0]))
+
+    prompt, schema = calls[0]
+    assert prompt.count("<exchange index=") == 2 and prompt.count("<exchange>") == 1
+    # Nothing else may be answered, nor an asked exchange skipped or answered twice.
+    assert list(schema["properties"]) == schema["required"] == ["2", "0"]
+    assert schema["additionalProperties"] is False
+    assert [(a.exchange, a.rationale) for a in assessed] == [(2, "answer 2"), (0, "answer 0")]
 
 
 @pytest.mark.parametrize(
