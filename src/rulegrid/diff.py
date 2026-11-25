@@ -58,15 +58,15 @@ def diff(old: Policy, new: Policy) -> PolicyDiff:
         a, b = getattr(old, side), getattr(new, side)
         changes += _compare(
             "axis",
-            {k: (v.definition, v.guidance) for k, v in a.items()},
-            {k: (v.definition, v.guidance) for k, v in b.items()},
+            {k: (v.definition, v.guidance, v.note) for k, v in a.items()},
+            {k: (v.definition, v.guidance, v.note) for k, v in b.items()},
         )
         changes += _compare(
             "value",
             {f"{k}/{v.id}": v for k, ax in a.items() for v in ax.values},
             {f"{k}/{v.id}": v for k, ax in b.items() for v in ax.values},
         )
-    text = {"label", "definition", "instruction"}
+    text = {"label", "definition", "instruction", "note"}
     changes += _compare(
         "tier",
         {k: [getattr(t, f) for f in text] for k, t in old.tiers.items()},
