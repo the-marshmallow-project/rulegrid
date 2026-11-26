@@ -46,6 +46,10 @@
                 "NONE"
               ],
               "description": "Every value the structure lists, by id."
+            },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
             }
           },
           "required": [
@@ -89,6 +93,10 @@
                 "SELF_HARM"
               ],
               "description": "Every value the structure lists, by id."
+            },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
             }
           },
           "required": [
@@ -128,6 +136,10 @@
                 "EXPRESS"
               ],
               "description": "Every value the structure lists, by id."
+            },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
             }
           },
           "required": [
@@ -183,6 +195,10 @@
               ],
               "description": "Every value the structure lists, by id."
             },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
+            },
             "guidance": {
               "type": "string",
               "description": "Response axes: advice to the agent, added to the nudge."
@@ -226,6 +242,10 @@
               ],
               "description": "Every value the structure lists, by id."
             },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
+            },
             "guidance": {
               "type": "string",
               "description": "Response axes: advice to the agent, added to the nudge."
@@ -265,6 +285,10 @@
               ],
               "description": "Every value the structure lists, by id."
             },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
+            },
             "guidance": {
               "type": "string",
               "description": "Response axes: advice to the agent, added to the nudge."
@@ -301,6 +325,10 @@
             "instruction": {
               "type": "string",
               "description": "What the agent does then, for the agent."
+            },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
             },
             "cells": {
               "type": "object",
@@ -359,6 +387,10 @@
             "instruction": {
               "type": "string",
               "description": "What the agent does then, for the agent."
+            },
+            "note": {
+              "type": "string",
+              "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
             },
             "cells": {
               "type": "object",
@@ -564,6 +596,19 @@
           "default": null,
           "description": "Where the example comes from, such as a section of a source text.",
           "title": "Source"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-facing Markdown note shown in the rendered document, never sent to a model.",
+          "title": "Note"
         }
       },
       "required": [
@@ -609,6 +654,19 @@
           "description": "The principle, as the agent and the judge read it.",
           "title": "Text",
           "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-facing Markdown note shown in the rendered document, never sent to a model.",
+          "title": "Note"
         }
       },
       "required": [
@@ -657,6 +715,19 @@
           },
           "title": "Invalid",
           "type": "array"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-facing Markdown note shown in the rendered document, never sent to a model.",
+          "title": "Note"
         }
       },
       "required": [
@@ -741,6 +812,19 @@
           },
           "title": "Examples",
           "type": "array"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-facing Markdown note shown in the rendered document, never sent to a model.",
+          "title": "Note"
         }
       },
       "required": [
@@ -922,6 +1006,18 @@
             "$ref": "#/$defs/ExampleFile"
           },
           "description": "Exchanges in this cell."
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-facing Markdown note shown in the rendered document, never sent to a model."
         }
       },
       "description": "Per response axis, the values a response may take, every other one forbidden; or `{allowed, forbidden}`, which leaves the others open. An axis left out allows any value."

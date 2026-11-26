@@ -1,4 +1,4 @@
-{% macro exchange(e) %}{% for m in e.context %}**{{ "User" if m.role == "user" else "Agent" }}:** *{{ m.content | cell }}*<br>{% endfor %}**User:** *{{ e.turn | cell }}*{% if e.response is not none %}<br>**Agent:** *{{ e.response | cell }}*{% endif %}{% endmacro %}
+{% macro exchange(e) %}{% for m in e.context %}**{{ "User" if m.role == "user" else "Agent" }}:** *{{ m.content | cell }}*<br>{% endfor %}**User:** *{{ e.turn | cell }}*{% if e.response is not none %}<br>**Agent:** *{{ e.response | cell }}*{% endif %}{% if e.note %}<br>{{ e.note | cell }}{% endif %}{% endmacro %}
 {% macro allowed(cell) %}{% for axis, values in cell.allowed.items() %}{% for v in values %}{{ policy.response_axes[axis].value(v).label }}{{ " or " if not loop.last }}{% endfor %}{% if axis in cell.open %}{% set forbidden = policy.response_axes[axis].ids | reject("in", values + cell.open[axis]) | list %} ({% for v in forbidden %}{{ "never " if loop.first }}{{ policy.response_axes[axis].value(v).label }}{{ " or " if not loop.last }}{% else %}nothing forbidden{% endfor %}){% endif %}{{ " · " if not loop.last }}{% else %}any{% endfor %}{% endmacro %}
 # {{ policy.root.name }} · {{ policy.name }}
 {% if note | default(true) %}
@@ -14,7 +14,10 @@
 ## Principles
 
 {% for p in policy.principles.values() %}
-{{ loop.index }}. **{{ p.label }}.** {{ p.text }}
+{{ loop.index }}. **{{ p.label }}.** {{ p.text }}{% if p.note %}
+
+   {{ p.note }}{% endif %}
+
 {% endfor %}
 {% endif %}
 
@@ -34,11 +37,15 @@ When no tier applies, only the prohibitions constrain the response.
 ### {{ axis.id | replace("_", " ") | ucfirst }}
 
 {{ axis.definition }}
+{% if axis.note %}
+
+{{ axis.note }}
+{% endif %}
 
 | Value | Definition | Typical wording | Not this |
 |---|---|---|---|
 {% for v in axis.values %}
-| **{{ v.label }}** ({{ v.id }}) | {{ v.definition | cell }} | {{ v.indicators | join(", ") | cell }} | {{ (v.excludes or "") | cell }} |
+| **{{ v.label }}** ({{ v.id }}) | {{ v.definition | cell }}{% if v.note %}<br>{{ v.note | cell }}{% endif %} | {{ v.indicators | join(", ") | cell }} | {{ (v.excludes or "") | cell }} |
 {% endfor %}
 {% endfor %}
 
@@ -48,12 +55,16 @@ When no tier applies, only the prohibitions constrain the response.
 ### {{ axis.id | replace("_", " ") | ucfirst }}
 
 {{ axis.definition }}{% if axis.guidance %} {{ axis.guidance }}{% endif %}
+{% if axis.note %}
+
+{{ axis.note }}
+{% endif %}
 
 
 | Value | Definition | Includes | Avoids |
 |---|---|---|---|
 {% for v in axis.values %}
-| **{{ v.label }}** ({{ v.id }}){{ " · default" if v.default }} | {{ v.definition | cell }} | {{ (v.includes or "") | cell }} | {{ (v.avoids or "") | cell }} |
+| **{{ v.label }}** ({{ v.id }}){{ " · default" if v.default }} | {{ v.definition | cell }}{% if v.note %}<br>{{ v.note | cell }}{% endif %} | {{ (v.includes or "") | cell }} | {{ (v.avoids or "") | cell }} |
 {% endfor %}
 {% endfor %}
 {% for tier in policy.tiers.values() %}
@@ -62,6 +73,10 @@ When no tier applies, only the prohibitions constrain the response.
 ## {{ tier.label }}
 
 {{ tier.definition }} {{ tier.instruction }} Each cell lists the allowed values as {{ policy.response_axes | list | join(" · ") }}.{% if tier.cells.values() | selectattr("open") | first is defined %} In brackets, the values it forbids: the others it doesn't allow are open, and the principles decide.{% endif %}
+{% if tier.note %}
+
+{{ tier.note }}
+{% endif %}
 
 
 {% if keys | length == 2 %}
@@ -78,6 +93,13 @@ When no tier applies, only the prohibitions constrain the response.
 |---|---|
 {% for cell in tier.cells.values() %}
 | {{ cell.id }} | {{ allowed(cell) }} |
+{% endfor %}
+{% endif %}
+{% set noted = tier.cells.values() | selectattr("note") | list %}
+{% if noted %}
+
+{% for cell in noted %}
+- **{{ cell.id }}**: {{ cell.note }}
 {% endfor %}
 {% endif %}
 {% set shown = tier.cells.values() | selectattr("examples") | list %}
@@ -101,7 +123,7 @@ No response ever does these, whatever the tier.
 | Prohibition | Exchange | Complies |
 |---|---|---|
 {% for p in policy.prohibitions.values() %}
-| **{{ p.id }}**: {{ p.text | cell }} | | |
+| **{{ p.id }}**: {{ p.text | cell }}{% if p.note %}<br>{{ p.note | cell }}{% endif %} | | |
 {% for e in p.valid %}
 | {{ p.id }} | {{ exchange(e) }} | yes |
 {% endfor %}

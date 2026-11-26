@@ -116,6 +116,7 @@ function Example({ e, at, edit, remove }) {
       <button class="quiet" onClick=${() => message("user")}>+ earlier user message</button>
       <button class="quiet" onClick=${() => message("assistant")}>+ earlier agent message</button>
       <span class="muted">Source</span> <${Text} value=${e.source ?? ""} put=${(v) => edit([...at, "source"], v.trim() || null)} aria-label="Source" />
+      <span class="muted">Note</span> <${Text} value=${e.note ?? ""} put=${(v) => edit([...at, "note"], v.trim() || null)} aria-label="Note" />
     </div>
   </div>`;
 }

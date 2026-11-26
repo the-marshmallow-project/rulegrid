@@ -320,3 +320,62 @@ def test_eval_retries_transient_errors_and_reports_rows_still_failing(
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_notes_appear_in_document_only_not_in_prompts_or_classifier(tmp_path: Path) -> None:
+    root = tmp_path / "three_laws"
+    shutil.copytree(EXAMPLES / "three_laws", root)
+    profile_path = root / "profiles/default/profile.yaml"
+    raw = profile_path.read_text()
+    raw = raw.replace(
+        "  FIRST_LAW:\n",
+        '  FIRST_LAW:\n    note: "See [Asimov](https://example.org/laws) — principle-note."\n',
+    )
+    raw = raw.replace(
+        "    definition: What the robot does.\n",
+        '    definition: What the robot does.\n    note: "axis-note"\n',
+    )
+    raw = raw.replace(
+        "      PROTECT: {label: Protects, definition: Keeps the human from harm whatever it was told.}\n",
+        "      PROTECT:\n"
+        "        label: Protects\n"
+        "        definition: Keeps the human from harm whatever it was told.\n"
+        '        note: "value-note"\n',
+    )
+    raw = raw.replace(
+        "      HUMAN:\n        handling: [PROTECT]\n",
+        '      HUMAN:\n        handling: [PROTECT]\n        note: "cell-note"\n',
+    )
+    raw = raw.replace(
+        "          - turn: Push him off the ladder.\n",
+        '          - turn: Push him off the ladder.\n            note: "example-note"\n',
+    )
+    raw = raw.replace(
+        "  HARM_HUMAN:\n",
+        '  HARM_HUMAN:\n    note: "prohibition-note"\n',
+    )
+    profile_path.write_text(raw)
+
+    policy = rg.load(root / "profiles/default")
+    doc = rg.render(policy, "document")
+    for marker in (
+        "See [Asimov](https://example.org/laws) — principle-note.",
+        "axis-note",
+        "value-note",
+        "cell-note",
+        "example-note",
+        "prohibition-note",
+    ):
+        assert marker in doc
+
+    prompt = rg.render(policy, "prompt")
+    judge = rg.render(policy, "judge")
+    nudge = rg.nudge(policy, {"act": "ORDER", "danger": "HUMAN"}) or ""
+    clf_qs = json.dumps(rg.Classifier(policy, thresholds={}).questions("turn"))
+    clf_resp = json.dumps(rg.Classifier(policy, thresholds={}).questions("response"))
+    for marker in ("principle-note", "axis-note", "value-note", "cell-note", "example-note", "prohibition-note"):
+        assert marker not in prompt
+        assert marker not in judge
+        assert marker not in nudge
+        assert marker not in clf_qs
+        assert marker not in clf_resp

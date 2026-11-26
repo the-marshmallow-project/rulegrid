@@ -47,7 +47,11 @@ def _axes(axes: Mapping[str, AxisSpec], side: str) -> dict[str, Any]:
     for axis_id, spec in axes.items():
         values = _object({v: {"$ref": "#/$defs/ValueFile"} for v in spec.values}, list(spec.values))
         values["description"] = AxisFile.model_fields["values"].description
-        fields: dict[str, Any] = {"definition": _text(AxisFile, "definition"), "values": values}
+        fields: dict[str, Any] = {
+            "definition": _text(AxisFile, "definition"),
+            "values": values,
+            "note": _text(AxisFile, "note"),
+        }
         if side == "response":
             fields["guidance"] = _text(AxisFile, "guidance")
         properties[axis_id] = _object(fields, ["definition", "values"])
@@ -85,7 +89,12 @@ def profile_schema(structure: Structure) -> dict[str, Any]:
         )
         cell[axis_id] = {"anyOf": [{**ids, "minItems": 1}, long]}
     examples = {"type": "array", "items": {"$ref": "#/$defs/ExampleFile"}, "description": "Exchanges in this cell."}
-    defs["Cell"] = _object({**cell, "examples": examples})
+    cell_note = {
+        "anyOf": [{"type": "string"}, {"type": "null"}],
+        "default": None,
+        "description": "Human-facing Markdown note shown in the rendered document, never sent to a model.",
+    }
+    defs["Cell"] = _object({**cell, "examples": examples, "note": cell_note})
     defs["Cell"]["description"] = (
         "Per response axis, the values a response may take, every other one forbidden; or `{allowed, forbidden}`, which"
         " leaves the others open. An axis left out allows any value."
@@ -96,6 +105,7 @@ def profile_schema(structure: Structure) -> dict[str, Any]:
                 "label": _text(TierFile, "label"),
                 "definition": _text(TierFile, "definition"),
                 "instruction": _text(TierFile, "instruction"),
+                "note": _text(TierFile, "note"),
                 "cells": {**_cells(condition), "description": TierFile.model_fields["cells"].description},
             },
             ["label", "definition", "instruction", "cells"],

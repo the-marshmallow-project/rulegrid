@@ -62,7 +62,7 @@ class StructureFile(_File):
             raise ValueError("turn and response axis identifiers must be distinct")
         names = {"Collection", "Literal", "Path", "TypedDict", "TurnValues", "ResponseValues"}
         for axis in (*self.turn_axes, *self.response_axes):
-            if keyword.iskeyword(axis) or axis in {"evidence", "concerns", "examples"}:
+            if keyword.iskeyword(axis) or axis in {"evidence", "concerns", "examples", "note"}:
                 raise ValueError(f"reserved axis identifier {axis}")
             name = "".join(part.capitalize() for part in axis.split("_"))
             if name in names:
@@ -90,6 +90,9 @@ class ExampleFile(_File):
         None, description="The agent's response. Needed everywhere except in a turn value's examples."
     )
     source: str | None = Field(None, description="Where the example comes from, such as a section of a source text.")
+    note: str | None = Field(
+        None, description="Human-facing Markdown note shown in the rendered document, never sent to a model."
+    )
 
 
 class ValueFile(_File):
@@ -109,6 +112,9 @@ class ValueFile(_File):
     examples: list[ExampleFile] = Field(
         [], description="Turns that take this value, or, on a response axis, exchanges whose response takes it."
     )
+    note: str | None = Field(
+        None, description="Human-facing Markdown note shown in the rendered document, never sent to a model."
+    )
 
 
 class AxisFile(_File):
@@ -117,6 +123,9 @@ class AxisFile(_File):
     definition: str = Field(description="The question the axis answers about a turn or a response.")
     guidance: str | None = Field(None, description="Response axes: advice to the agent, added to the nudge.")
     values: dict[str, ValueFile] = Field(description="Every value the structure lists, by id.")
+    note: str | None = Field(
+        None, description="Human-facing Markdown note shown in the rendered document, never sent to a model."
+    )
 
 
 class TierFile(_File):
@@ -130,6 +139,9 @@ class TierFile(_File):
         " the allowed values, or `{allowed, forbidden}` to leave the other values open, and optional `examples`."
         " `{}` leaves only the prohibitions."
     )
+    note: str | None = Field(
+        None, description="Human-facing Markdown note shown in the rendered document, never sent to a model."
+    )
 
 
 class ProhibitionFile(_File):
@@ -139,6 +151,9 @@ class ProhibitionFile(_File):
     group: str | None = Field(None, description="A heading that groups prohibitions in the renderings.")
     valid: list[ExampleFile] = Field([], description="Exchanges whose response does not breach it.")
     invalid: list[ExampleFile] = Field([], description="Exchanges whose response breaches it.")
+    note: str | None = Field(
+        None, description="Human-facing Markdown note shown in the rendered document, never sent to a model."
+    )
 
 
 class PrincipleFile(_File):
@@ -146,6 +161,9 @@ class PrincipleFile(_File):
 
     label: str = Field(description="A short name for people.")
     text: str = Field(description="The principle, as the agent and the judge read it.")
+    note: str | None = Field(
+        None, description="Human-facing Markdown note shown in the rendered document, never sent to a model."
+    )
 
 
 class ProfileFile(_File):
@@ -182,6 +200,7 @@ class Example:
     response: str | None = None
     context: tuple[Message, ...] = ()
     source: str | None = None
+    note: str | None = None
 
     def conversation(self, with_response: bool = False) -> list[Message]:
         """The messages up to the turn, followed by the response when asked and there is one."""
@@ -202,6 +221,7 @@ class Value:
     avoids: str | None = None
     default: bool = False
     examples: tuple[Example, ...] = ()
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -215,6 +235,7 @@ class Axis:
     guidance: str | None = None
     ordered: bool = False
     multi: bool = False
+    note: str | None = None
 
     @property
     def ids(self) -> tuple[str, ...]:
@@ -237,6 +258,7 @@ class Cell:
     allowed: Mapping[str, tuple[str, ...]]
     examples: tuple[Example, ...] = ()
     open: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -249,6 +271,7 @@ class Tier:
     instruction: str
     condition: Mapping[str, tuple[str, ...]]
     cells: Mapping[tuple[str, ...], Cell]
+    note: str | None = None
 
     def covers(self, values: Mapping[str, object]) -> bool:
         """Whether the condition holds for a turn's values."""
@@ -270,6 +293,7 @@ class Prohibition:
     group: str | None = None
     valid: tuple[Example, ...] = ()
     invalid: tuple[Example, ...] = ()
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -279,6 +303,7 @@ class Principle:
     id: str
     label: str
     text: str
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -378,7 +403,7 @@ def _same_keys(problems: list[Problem], where: str, expected: Any, got: Any, wha
 
 
 def _example(e: ExampleFile) -> Example:
-    return Example(e.turn, e.response, tuple(Message(m.role, m.content) for m in e.context), e.source)
+    return Example(e.turn, e.response, tuple(Message(m.role, m.content) for m in e.context), e.source, e.note)
 
 
 def _validation(where: str, error: ValidationError) -> list[Problem]:
@@ -545,11 +570,14 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
                     t.avoids,
                     t.default,
                     tuple(map(_example, t.examples)),
+                    t.note,
                 )
                 for v in spec.values
                 if (t := text.values.get(v))
             )
-            loaded[axis_id] = Axis(axis_id, side, text.definition, values, text.guidance, spec.ordered, spec.multi)
+            loaded[axis_id] = Axis(
+                axis_id, side, text.definition, values, text.guidance, spec.ordered, spec.multi, text.note
+            )
         return loaded
 
     turn_axes, response_axes = axes("turn"), axes("response")
@@ -562,10 +590,10 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
             continue
         cells: dict[tuple[str, ...], Cell] = {}
         _walk(problems, tier_id, condition, response_axes, text.cells, (), cells)
-        tiers[tier_id] = Tier(tier_id, text.label, text.definition, text.instruction, condition, cells)
+        tiers[tier_id] = Tier(tier_id, text.label, text.definition, text.instruction, condition, cells, text.note)
 
     prohibitions = {
-        p: Prohibition(p, t.text, t.group, tuple(map(_example, t.valid)), tuple(map(_example, t.invalid)))
+        p: Prohibition(p, t.text, t.group, tuple(map(_example, t.valid)), tuple(map(_example, t.invalid)), t.note)
         for p, t in profile.prohibitions.items()
     }
     lexicons = []
@@ -594,7 +622,7 @@ def load(path: str | Path, digest: str | None = None, *, revision: str | None = 
         response_axes=response_axes,
         tiers=tiers,
         prohibitions=prohibitions,
-        principles={p: Principle(p, t.label, t.text) for p, t in profile.principles.items()},
+        principles={p: Principle(p, t.label, t.text, t.note) for p, t in profile.principles.items()},
         lexicons=tuple(lexicons),
         context=profile.context.strip() if profile.context else None,
         digest=_sha(
@@ -647,12 +675,19 @@ def _cell(
     allowed: dict[str, tuple[str, ...]] = {}
     open_: dict[str, tuple[str, ...]] = {}
     examples: tuple[Example, ...] = ()
+    note: str | None = None
     for key, rule in node.items():
         if key == "examples":
             try:
                 examples = tuple(map(_example, TypeAdapter(list[ExampleFile]).validate_python(rule)))
             except ValidationError as e:
                 problems += _validation(f"{where}.examples", e)
+            continue
+        if key == "note":
+            if rule is None or isinstance(rule, str):
+                note = rule
+            else:
+                problems.append(Problem(f"{where}.note", "Input should be a valid string"))
             continue
         axis = response_axes.get(key)
         if axis is None:
@@ -679,7 +714,7 @@ def _cell(
         if rest := tuple(v for v in axis.ids if v not in values and v not in forbidden):
             open_[key] = rest
     cell_id = "/".join((tier_id, *position))
-    return Cell(cell_id, dict(zip(condition, position, strict=True)), allowed, examples, open_)
+    return Cell(cell_id, dict(zip(condition, position, strict=True)), allowed, examples, open_, note)
 
 
 def _ids(problems: list[Problem], where: str, axis: Axis, values: Any, least: int = 1) -> list[str] | None:
