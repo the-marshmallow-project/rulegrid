@@ -24,7 +24,7 @@ The agent writes a Rulegrid policy and lists the decisions your text leaves open
 The [guide][SKILL.md] is also an agent skill:
 
 ```
-npx skills add the-marshmallow-project/rulegrid@v0.4.0
+npx skills add the-marshmallow-project/rulegrid@v0.4.1
 ```
 
 ## Quick start
@@ -244,9 +244,9 @@ release tagged `editor-vX.Y.Z` publishes rulegrid-editor.
 
 MIT.
 
-[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.4.0/GLOSSARY.md
-[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.4.0/skills/rulegrid/SKILL.md
-[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.4.0/editor
-[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.4.0/examples/three_laws
-[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.4.0/examples/rbr
-[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.4.0/examples/rbr/gold.py
+[GLOSSARY.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.4.1/GLOSSARY.md
+[SKILL.md]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.4.1/skills/rulegrid/SKILL.md
+[editor]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.4.1/editor
+[three_laws]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.4.1/examples/three_laws
+[rbr]: https://github.com/the-marshmallow-project/rulegrid/tree/v0.4.1/examples/rbr
+[gold.py]: https://github.com/the-marshmallow-project/rulegrid/blob/v0.4.1/examples/rbr/gold.py
